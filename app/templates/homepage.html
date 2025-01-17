@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Link to your new CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+</head>
+<body>
+
+<div class="home-container">
+
+    <!-- Header section with Home and Waffle buttons -->
+    <div class="home-header">
+        <!-- Home button (disabled) -->
+        <div class="home-button disabled">
+            <img src="{{ url_for('static', filename='images/home.svg') }}" alt="Home">
+        </div>
+
+        <!-- Waffle button -->
+        <div class="waffle-button">
+            <a href="{{ url_for('home_blueprint.waffle_function') }}">
+                <img src="{{ url_for('static', filename='images/waffle.svg') }}" alt="Waffle">
+            </a>
+        </div>
+    </div>
+
+    <!-- Title section -->
+    <div class="title-section">
+        <div class="boost-text">BOOST</div>
+        <div class="behavioral-text">BEHAVIORAL</div>
+    </div>
+    <!-- askajdh -->
+    <div class="search-container">
+        <!-- SVG Outline -->
+        <svg class="search-outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 60">
+            <rect x="1.5" y="1.5" width="397" height="57" rx="25" ry="25" fill="none" stroke="black" stroke-width="3" />
+        </svg>
+
+        <!-- Form container for search input and button -->
+        <form method="POST" action="{{ url_for('feed.results_search') }}" class="search-form">
+            <input
+                type="text"
+                name="search_query"
+                class="search-input"
+                placeholder="Search tasks, subjects, or categories..."
+                required
+            />
+            <button type="submit" class="search-button">
+                <img src="{{ url_for('static', filename='images/search.svg') }}" alt="Search">
+            </button>
+        </form>
+    </div>

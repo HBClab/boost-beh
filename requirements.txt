@@ -6,3 +6,4 @@ pandas
 Requests
 seaborn
 termcolor
+Gunicorn

@@ -1,6 +1,6 @@
 import os
 from flask import Flask, send_from_directory
-from .main.utils import construct_master_list
+from main.utils import construct_master_list
 
 def update_png_paths_and_create_serve_function(app):
     """

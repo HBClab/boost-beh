@@ -52,8 +52,8 @@ def create_app():
         update_png_paths_and_create_serve_function(app)
 
     # Register blueprints
-    from .feed_blueprint import feed_print
-    from .home_blueprint import home_blueprint
+    from feed_blueprint import feed_print
+    from home_blueprint import home_blueprint
     app.register_blueprint(feed_print)
     app.register_blueprint(home_blueprint)
 

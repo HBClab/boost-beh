@@ -55,8 +55,6 @@ class Pull:
                 response = requests.post(url, headers=headers, json=data, proxies=proxies)
                 response.raise_for_status()  # Raise HTTP errors if any
                 response_json = response.json()
-                print(f"""raw response from Jatos:
-                    {response_json}""")
 
                 # Extract and filter study results
                 study_result_ids = [
@@ -82,8 +80,6 @@ class Pull:
                 response = requests.post(url, headers=headers, json=data) #proxies=proxies) DONT USE THAT THANG
                 response.raise_for_status()  # Raise HTTP errors if any
                 response_json = response.json()
-                print(f"""raw response from Jatos:
-                    {response_json}""")
 
                 # Extract and filter study results
                 study_result_ids = [
@@ -165,7 +161,6 @@ class Pull:
                             df = pd.DataFrame({"file_content": [file_data]})  # Create a DataFrame for this file
                             data_frames.append(df)
 
-        print(f"Extracted {len(data_frames)} .txt files.")
         return data_frames  # List of DataFrames
 
 

@@ -84,7 +84,6 @@ class Handler:
                 print(f"Category = {category}")
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
-                print(categories)
 
         else:
             qc_instance = CCqC(task,
@@ -102,7 +101,6 @@ class Handler:
                 print(f"Category = {category}")
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
-                print(categories)
         save_instance = SAVE_EVERYTHING()
         save_instance.save_dfs(categories=categories,
                                 task=task)
@@ -202,10 +200,8 @@ class Handler:
                 dwl_instance = WL_QC()
                 print(f"qcing {subject}")
                 df_all, category = dwl_instance.dwl_qc(df, version)
-                print(df_all.head())
                 plot = plot_instance.dwl_plot(df_all)
                 print(f"Category = {category}")
-                print(df_all.head())
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
         save_instance = SAVE_EVERYTHING()

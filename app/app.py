@@ -37,7 +37,7 @@ def update_png_paths_and_create_serve_function(app):
 
 def create_app():
     app = Flask(__name__)
-    app.config['DATA_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'test'))
+    app.config['DATA_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
     app.config['ALLOWED_EXTENSIONS'] = {'csv', 'txt', 'png'}
 
     # Ensure the data folder exists

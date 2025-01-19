@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class SAVE_EVERYTHING:
     def __init__(self):
-        self.datadir = './data/test'
+        self.datadir = './data'
         self.sessions = {}  # Dictionary to track session numbers for each subjectID
 
     def _get_folder(self, subjID):

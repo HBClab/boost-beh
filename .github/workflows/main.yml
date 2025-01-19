@@ -36,4 +36,5 @@ jobs:
         python-version: "3.10" # Specify one Python version for `run-main`
     - name: Run main handler
       run: |
+        pip list
         python code/main_handler.py all

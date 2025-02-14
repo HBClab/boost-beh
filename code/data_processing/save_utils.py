@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from termcolor import cprint
 
 class SAVE_EVERYTHING:
     def __init__(self):
-        self.datadir = './data/test'
+        self.datadir = './data'
         self.sessions = {}  # Dictionary to track session numbers for each subjectID
 
     def _get_folder(self, subjID):
@@ -17,6 +18,7 @@ class SAVE_EVERYTHING:
 
     def save_dfs(self, categories, task):
         for subjectID, category, df in categories:
+            cprint(f"saving {subjectID}...", "green")
             folder1, folder2 = self._get_folder(subjectID)
             outdir = os.path.join(self.datadir, folder1, folder2, str(subjectID), task, 'data')
             session = df['session_number'][2]

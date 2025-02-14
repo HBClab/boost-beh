@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import numpy as np
 
+from termcolor import cprint
 
 class CONVERT_TO_CSV:
     def __init__(self, task, init_path='./data/raw'):
@@ -20,8 +21,12 @@ class CONVERT_TO_CSV:
             tweets = []
 
             for line in lines:
+                print(line)
                 if line.strip():
-                    tweets.append(json.loads(line))
+                    try:
+                        tweets.append(json.loads(line))
+                    except json.JSONDecodeError as e:
+                        cprint(f"JSONDecodeError: {e} on line: {line}", 'red')
 
             if not tweets:
                 # If file is empty or has no valid lines, skip

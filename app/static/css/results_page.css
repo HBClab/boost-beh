@@ -1,0 +1,178 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+/* Reset body margins and ensure full width and height */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Inter, sans-serif;
+    background-color: #f5f5f5;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Container for all content with dynamic height */
+.results-container {
+    width: 100%; /* Full width of the screen */
+    min-height: 100vh; /* Ensures at least full viewport height */
+    background-color: #D9D9D9;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center-align content horizontally */
+    padding: 0; /* Remove unnecessary padding */
+    box-sizing: border-box; /* Includes padding in height calculation */
+}
+
+/* Buttons container at the top */
+.buttons-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    box-sizing: border-box;
+}
+
+/* Header for title and total completed */
+.filter-header {
+    text-align: center;
+    margin: 10px 0; /* Reduce top margin to remove unnecessary gap */
+    padding: 0; /* Ensure no extra padding */
+}
+
+.filter-title {
+    color: #1C1B1F;
+    font-size: 32px;
+    font-family: Inter, sans-serif;
+    font-weight: 400;
+    margin-bottom: 0.5em;
+}
+
+.filter-total {
+    color: #786D6D;
+    font-size: 24px;
+    font-family: Inter, sans-serif;
+    font-weight: 400;
+    margin-top: 0;
+}
+
+/* Styling for the card */
+/* Styling for the card */
+.card {
+    max-width: 1200px;
+    width: calc(100% - 40px);
+    margin: 20px auto;
+    position: relative;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The container for the top row (Subject & Task) */
+.card-header {
+    display: flex;                    /* Enables horizontal alignment */
+    justify-content: space-between;   /* Subject left, Task right */
+    align-items: center;
+    margin-bottom: 10px;              /* Spacing below the top row */
+    font-weight: bold;                /* Make them stand out */
+}
+
+/* Optional individual styling */
+.card-subject {
+    /* Left side – default Flexbox alignment */
+}
+.card-task {
+    /* Right side – default Flexbox alignment */
+}
+
+/* One-line container for Date, Site, Category */
+.card-info {
+    display: flex;                    /* Enables horizontal alignment */
+    justify-content: space-between;   /* Space items across the full width */
+    align-items: center;              /* Vertically center text */
+    margin-bottom: 15px;              /* Add spacing below */
+    font-size: 16px;                  /* Text size for all items */
+}
+
+/* Individual styling for the items */
+.card-info span {
+    display: inline-block;            /* Ensure proper inline layout */
+}
+
+/* Styling for the Category to make it darker and stand out */
+.card-info .category {
+    font-weight: bold;                /* Make it bold */
+    color: #333;                      /* Darker color for emphasis */
+}
+/* Existing .card-img rules or your .images-container, etc. remain unchanged */
+
+.card:hover {
+    transform: translateY(-5px); /* Lift the card slightly */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+/* Container that holds both images side by side */
+.images-container {
+    display: flex;        /* enables horizontal layout */
+    gap: 10px;            /* 10px space between the images */
+    margin-bottom: 20px;  /* extra space below the images */
+}
+
+/* Make each link (which holds an image) flex evenly */
+.images-container a {
+    flex: 1;              /* each link expands to share available space equally */
+}
+
+/* The images themselves */
+.card-img {
+    display: block;       /* ensure images behave like block elements */
+    width: 100%;          /* fill the parent anchor's width */
+    height: auto;         /* keep aspect ratio */
+    border-radius: 10px;  /* maintain your rounded corners */
+    margin: 0;            /* remove auto-centering from the old CSS */
+}
+/* Waffle button container */
+.waffle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.waffle-button {
+    width: 44px;
+    height: 32px;
+    cursor: pointer;
+}
+
+/* Search bar container */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Input field for search */
+.search-input {
+    width: 250px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: Inter, sans-serif;
+}
+
+/* Search button */
+.search-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.search-button img {
+    width: 24px;
+    height: 24px;
+}

@@ -13,38 +13,58 @@ def initialize_schema(connection):
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
-            CREATE TABLE IF NOT EXISTS study (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50) UNIQUE NOT NULL
-            );
+                -- Drop existing tables in reverse dependency order.
+                DROP TABLE IF EXISTS session CASCADE;
+                DROP TABLE IF EXISTS task CASCADE;
+                DROP TABLE IF EXISTS subject CASCADE;
+                DROP TABLE IF EXISTS site CASCADE;
+                DROP TABLE IF EXISTS study CASCADE;
 
-            CREATE TABLE IF NOT EXISTS site (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50) NOT NULL,
-                study_id INT REFERENCES study(id) ON DELETE CASCADE
-            );
+                -- Create table "study"
+                CREATE TABLE study (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE
+                );
 
-            CREATE TABLE IF NOT EXISTS subject (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50) NOT NULL,
-                site_id INT REFERENCES site(id) ON DELETE CASCADE
-            );
+                -- Create table "site"
+                CREATE TABLE site (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    study_id INTEGER NOT NULL,
+                    UNIQUE (name, study_id),
+                    FOREIGN KEY (study_id) REFERENCES study(id) ON DELETE CASCADE
+                );
 
-            CREATE TABLE IF NOT EXISTS task (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(50) NOT NULL,
-                subject_id INT REFERENCES subject(id) ON DELETE CASCADE
-            );
+                -- Create table "subject"
+                CREATE TABLE subject (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    site_id INTEGER NOT NULL,
+                    UNIQUE (name, site_id),
+                    FOREIGN KEY (site_id) REFERENCES site(id) ON DELETE CASCADE
+                );
 
-            CREATE TABLE IF NOT EXISTS session (
-                id SERIAL PRIMARY KEY,
-                session_name VARCHAR(50) NOT NULL,
-                category INT NOT NULL,
-                csv_path TEXT,
-                plot_paths TEXT[],
-                task_id INT REFERENCES task(id) ON DELETE CASCADE,
-                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-            );
+                -- Create table "task"
+                CREATE TABLE task (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    subject_id INTEGER NOT NULL,
+                    UNIQUE (name, subject_id),
+                    FOREIGN KEY (subject_id) REFERENCES subject(id) ON DELETE CASCADE
+                );
+
+                -- Create table "session"
+                CREATE TABLE session (
+                    id SERIAL PRIMARY KEY,
+                    session_name TEXT NOT NULL,
+                    category INTEGER NOT NULL,
+                    csv_path TEXT NOT NULL,
+                    task_id INTEGER NOT NULL,
+                    date TIMESTAMP,
+                    plot_paths TEXT[],
+                    FOREIGN KEY (task_id) REFERENCES task(id) ON DELETE CASCADE,
+                    UNIQUE (session_name, category, csv_path, task_id)
+                );
             """)
             connection.commit()
     except Exception as e:
@@ -131,18 +151,17 @@ from psycopg import sql
 
 # Main entry point
 if __name__ == "__main__":
-    db_name = "boostbeh"
+    db_name = "boost-beh"
     user = "zakg04"
     password = "*mIloisfAT23*123*"
     data_folder = "../data"
     connection = connect_to_db(db_name, user, password)
+    try:
+        initialize_schema(connection)
+    finally:
+        connection.close()
+'''
     util_instance = DatabaseUtils(connection, data_folder)
     util_instance.update_database()
 
-    """conn = connect_to_db(db_name, user, password)
-    try:
-        initialize_schema(conn)
-        populate_database(conn, data_folder)
-        print("Database initialized and populated successfully.")
-    finally:
-        conn.close()"""
+'''

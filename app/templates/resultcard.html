@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}">
+</head>
+<body>
+    <div class="card">
+        <div class="card-bg"></div>
+        <div class="card-title">{{ card.title }}</div>
+        <div class="card-date">{{ card.date }}</div>
+        <div class="card-site">{{ card.site }}</div>
+        <div class="card-category">{{ card.category }}</div>
+        {% if card.image1 %}
+        <img class="card-img" src="{{ card.image1 }}" alt="Image 1">
+        {% endif %}
+        {% if card.image2%}
+        <img class="card-img" src="{{ card.image2 }}" alt="Image 2">
+        {% endif %}
+    </div>
+</body>
+</html>

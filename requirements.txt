@@ -1,9 +1,0 @@
-Flask
-fuzzywuzzy
-matplotlib
-numpy
-pandas
-Requests
-seaborn
-termcolor
-Gunicorn

@@ -1,103 +1,173 @@
 import os
 import logging
-import psycopg  # PostgreSQL database adapter
+import psycopg
 import pandas as pd
 from datetime import datetime
+import re
 
 class DatabaseUtils:
-    def __init__(self, connection, data_folder):
+    def __init__(self, db_name, user, password, data_folder):
         """
-        Initializes the DatabaseUtils class with a database connection and a data folder path.
+        Initializes the DatabaseUtils class with database credentials and a data folder path.
         
-        :param connection: PostgreSQL database connection object.
+        :param db_name: Name of the PostgreSQL database.
+        :param user: Username for the database.
+        :param password: Password for the database.
         :param data_folder: Path to the directory containing study data.
         """
-        self.connection = connection
         self.data_folder = data_folder
+        self.db_name = db_name
+        self.user = user
+        self.password = password
+
+    def connect(self, host="localhost", port=5432):
+        """
+        Connects to the PostgreSQL database using provided credentials.
+        """
+        self.connection = psycopg.connect(
+            dbname=self.db_name,
+            host=host,
+            port=port
+        )
+        return self.connection
 
     def update_database(self):
         """
-        Iterates through the directory structure and updates the database with study, site, subject, 
-        task, and session information. Commits changes at the end of processing each study.
+        Walks through the directory structure organized as:
+            data_folder -> study -> site -> subject -> task
+        Each task folder is expected to contain:
+            - A "data" folder with CSV files (naming: <subject>_ses-<session>_cat-<category>.csv)
+            - A "plot" folder with PNG files (naming: <subject>_ses-<session>_plot*.png)
+        A unique task record is created per task folder (per subject). For each CSV file in the
+        task's data folder, a session record is inserted that references that unique task record.
         """
         logging.info("Starting database update.")
 
-        # Loop through each study folder in the data directory
-        for study_name in os.listdir(self.data_folder):
+        # Loop through each study folder
+        for study_name in sorted(os.listdir(self.data_folder)):
             study_path = os.path.join(self.data_folder, study_name)
             if not os.path.isdir(study_path):
                 logging.warning(f"Skipping non-directory: {study_path}")
                 continue
 
-            # Add or retrieve the study ID from the database
             study_id = self._add_or_get_id("study", {"name": study_name})
+            logging.info(f"Processing study '{study_name}' (ID: {study_id}).")
 
             # Loop through each site folder within the study
-            for site_name in os.listdir(study_path):
+            for site_name in sorted(os.listdir(study_path)):
                 site_path = os.path.join(study_path, site_name)
                 if not os.path.isdir(site_path):
                     logging.warning(f"Skipping non-directory: {site_path}")
                     continue
 
-                # Add or retrieve the site ID from the database
                 site_id = self._add_or_get_id("site", {"name": site_name, "study_id": study_id})
+                logging.info(f"Processing site '{site_name}' (ID: {site_id}).")
 
                 # Loop through each subject folder within the site
-                for subject_name in os.listdir(site_path):
+                for subject_name in sorted(os.listdir(site_path)):
                     subject_path = os.path.join(site_path, subject_name)
                     if not os.path.isdir(subject_path):
                         logging.warning(f"Skipping non-directory: {subject_path}")
                         continue
 
-                    # Since subject names are always four-digit numbers, format them accordingly.
+                    # Format subject name if numeric (pad to 4 digits)
                     try:
-                        # Ensure the subject folder name is numeric and pad with leading zeros if necessary.
                         int(subject_name)
                         subject_name = subject_name.zfill(4)
                     except ValueError:
                         logging.warning(f"Subject name {subject_name} is not numeric; saving as-is.")
 
-                    # Add or retrieve the subject ID from the database
                     subject_id = self._add_or_get_id("subject", {"name": subject_name, "site_id": site_id})
+                    logging.info(f"Processing subject '{subject_name}' (ID: {subject_id}).")
 
                     # Loop through each task folder within the subject
-                    for task_name in os.listdir(subject_path):
+                    for task_name in sorted(os.listdir(subject_path)):
                         task_path = os.path.join(subject_path, task_name)
                         if not os.path.isdir(task_path):
                             logging.warning(f"Skipping non-directory: {task_path}")
                             continue
 
-                        # Add or retrieve the task ID from the database
+                        # Create or retrieve a unique task record for the subject.
                         task_id = self._add_or_get_id("task", {"name": task_name, "subject_id": subject_id})
+                        logging.info(f"Processing task '{task_name}' (ID: {task_id}).")
 
-                        # Process data files within the task folder
-                        self._process_data_folder(task_path, task_id)
-                        # Process plot images within the task folder
-                        self._process_plot_folder(task_path, task_id)
+                        # Process sessions within this task folder (each session from a CSV file)
+                        data_folder_path = os.path.join(task_path, "data")
+                        if os.path.exists(data_folder_path):
+                            for file in sorted(os.listdir(data_folder_path)):
+                                if file.endswith(".csv"):
+                                    logging.debug(f"Processing CSV file: {file}")
+                                    try:
+                                        # Expected naming: <subject>_ses-<session>_cat-<category>.csv
+                                        parts = file.split("_")
+                                        if len(parts) < 3:
+                                            raise ValueError(f"Unexpected file format: {file}")
 
-            # Commit all changes for the current study
+                                        # Extract session identifier (e.g., "ses-1")
+                                        session_identifier = parts[1].strip()
+                                        # Extract category (e.g., from "cat-1.csv")
+                                        cat_part = parts[2]
+                                        category = int(cat_part.split("-")[1].split(".")[0])
+
+                                        # Build the CSV relative path (starting with "./data")
+                                        csv_relative_path = os.path.join(".", "data", file)
+                                        csv_full_path = os.path.join(data_folder_path, file)
+                                        date = None
+                                        try:
+                                            df = pd.read_csv(csv_full_path)
+                                            if "datetime" in df.columns and not df.empty:
+                                                raw_date = str(df["datetime"].iloc[0])
+                                                date = self._clean_date(raw_date)
+                                        except Exception as e:
+                                            logging.error(f"Error reading CSV {csv_full_path}: {e}")
+
+                                        # Process the "plot" folder for matching PNG files
+                                        plot_folder_path = os.path.join(task_path, "plot")
+                                        plot_relative_paths = []
+                                        if os.path.exists(plot_folder_path):
+                                            for pfile in sorted(os.listdir(plot_folder_path)):
+                                                if pfile.endswith(".png") and session_identifier in pfile:
+                                                    # Build relative plot path (starting with "./plot")
+                                                    plot_relative = os.path.join(".", "plot", pfile)
+                                                    plot_relative_paths.append(plot_relative)
+
+                                        # Insert session record that references the unique task
+                                        with self.connection.cursor() as cursor:
+                                            cursor.execute(
+                                                """
+                                                INSERT INTO session (session_name, category, csv_path, task_id, date, plot_paths)
+                                                VALUES (%s, %s, %s, %s, %s, %s)
+                                                ON CONFLICT DO NOTHING;
+                                                """,
+                                                (session_identifier, category, csv_relative_path, task_id, date, plot_relative_paths)
+                                            )
+                                        logging.debug(f"Inserted session '{session_identifier}' with CSV {csv_relative_path} and plots {plot_relative_paths}.")
+                                    except Exception as e:
+                                        logging.error(f"Error processing file {file}: {e}")
+                        else:
+                            logging.warning(f"No 'data' folder found in task directory: {task_path}")
+
+            # Commit changes after processing each study
             self.connection.commit()
-            logging.info("Database committed.")
+            logging.info(f"Committed changes for study '{study_name}'.")
 
         logging.info("Database update complete.")
 
     def _add_or_get_id(self, table, values):
         """
-        Adds a new entry to the specified table or retrieves the existing entry's ID.
-
-        :param table: The name of the database table.
-        :param values: A dictionary containing column names and their values.
-        :return: The ID of the existing or newly inserted row.
+        Inserts a new record into the specified table or returns the existing record's ID.
+        
+        :param table: The name of the table.
+        :param values: A dictionary of column names and values.
+        :return: The ID of the record.
         """
-        # Build a WHERE clause for checking existing rows
-        placeholders = ' AND '.join([f"{key} = %s" for key in values.keys()])
-        columns = ', '.join(values.keys())
+        placeholders = " AND ".join([f"{key} = %s" for key in values.keys()])
+        columns = ", ".join(values.keys())
         values_list = list(values.values())
 
-        # SQL query to insert a new record, avoiding conflicts
         query = f"""
-            INSERT INTO {table} ({columns}) 
-            VALUES ({', '.join(['%s'] * len(values))}) 
+            INSERT INTO {table} ({columns})
+            VALUES ({', '.join(['%s'] * len(values))})
             ON CONFLICT DO NOTHING RETURNING id;
         """
 
@@ -106,93 +176,51 @@ class DatabaseUtils:
             result = cursor.fetchone()
             if result:
                 return int(result[0])
-
-            # If no ID is returned, retrieve the existing record's ID.
+            # If no new row was created, fetch the existing ID.
             select_query = f"SELECT id FROM {table} WHERE {placeholders};"
             cursor.execute(select_query, values_list)
             return int(cursor.fetchone()[0])
 
-    def _process_data_folder(self, task_path, task_id):
-        """
-        Processes CSV files in the "data" folder within a task directory and inserts session records into the database.
-
-        :param task_path: Path to the task directory.
-        :param task_id: ID of the corresponding task in the database.
-        """
-        data_folder_path = os.path.join(task_path, "data")
-        if os.path.exists(data_folder_path):
-            for file in os.listdir(data_folder_path):
-                if file.endswith(".csv"):
-                    logging.debug(f"Processing file: {file}")
-                    try:
-                        # Extract session and category information from the filename
-                        parts = file.split("_")
-                        if len(parts) < 3:
-                            raise ValueError(f"Unexpected file format: {file}")
-
-                        session_name = parts[1].split("-")[1]  # Extract session name
-                        category = int(parts[2].split("-")[1].split(".")[0])  # Extract category
-                        csv_path = os.path.join(data_folder_path, file)
-
-                        # Extract and clean the date from the CSV if it contains a 'datetime' column
-                        date = None
-                        df = pd.read_csv(csv_path)
-                        if 'datetime' in df.columns:
-                            raw_date = str(df['datetime'].iloc[0])
-                            date = self._clean_date(raw_date)
-                        del df  # Free up memory
-
-                        # Insert session data into the database
-                        with self.connection.cursor() as cursor:
-                            cursor.execute(
-                                """
-                                INSERT INTO session (session_name, category, csv_path, task_id, date)
-                                VALUES (%s, %s, %s, %s, %s)
-                                ON CONFLICT DO NOTHING;
-                                """,
-                                (session_name, category, csv_path, task_id, date)
-                            )
-                        logging.debug(f"Session added: {session_name}, Category: {category}, Path: {csv_path}, Date: {date}")
-                    except (IndexError, ValueError, pd.errors.EmptyDataError) as e:
-                        logging.error(f"Error processing file {file}: {e}")
-
-    def _process_plot_folder(self, task_path, task_id):
-        """
-        Processes PNG image files in the "plot" folder and updates the session record with plot file paths.
-
-        :param task_path: Path to the task directory.
-        :param task_id: ID of the corresponding task in the database.
-        """
-        plot_folder_path = os.path.join(task_path, "plot")
-        if os.path.exists(plot_folder_path):
-            plots = [os.path.join(plot_folder_path, f) for f in os.listdir(plot_folder_path) if f.endswith(".png")]
-            if plots:
-                with self.connection.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        UPDATE session
-                        SET plot_paths = %s
-                        WHERE task_id = %s;
-                        """,
-                        (plots, task_id)
-                    )
-                logging.debug(f"Plots updated for task {task_id}: {plots}")
-
     def _clean_date(self, raw_date):
         """
-        Converts a raw date string into a standardized format.
-
-        :param raw_date: Date string extracted from a CSV file.
-        :return: Standardized date string or None if parsing fails.
+        Cleans and converts a raw date string into SQL-compatible format.
+        
+        :param raw_date: Date string extracted from a CSV.
+        :return: Formatted date string or None if parsing fails.
         """
-        import re
         try:
-            # Remove timezone information enclosed in parentheses
+            # Remove timezone information enclosed in parentheses, if any.
             cleaned_raw_date = re.sub(r"\s\(.*?\)", "", raw_date)
-            # Parse the cleaned date string into a datetime object
+            # Parse date assuming format like "Wed Mar 03 2021 12:34:56 GMT+0000"
             clean_date = datetime.strptime(cleaned_raw_date, "%a %b %d %Y %H:%M:%S %Z%z")
-            # Convert to SQL-compatible format
             return clean_date.strftime("%Y-%m-%d %H:%M:%S")
         except ValueError as e:
-            logging.error(f"Error parsing date: {raw_date} - {e}")
+            logging.error(f"Error parsing date '{raw_date}': {e}")
             return None
+
+def create_init_db():
+    import logging
+
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+
+    # Define PostgreSQL credentials and data folder path
+    DB_NAME = "boost-beh-test"
+    DB_USER = "your_username"
+    DB_PASSWORD = "your_password"
+    DATA_FOLDER = "../../data"  # Change this to the actual data folder path
+
+    # Initialize the database utility
+    db_utils = DatabaseUtils(DB_NAME, DB_USER, DB_PASSWORD, DATA_FOLDER)
+
+    # Connect to the database
+    db_utils.connect()
+
+    # Run the update script
+    db_utils.update_database()
+
+    # Close the database connection when done
+    db_utils.connection.close()
+
+
+create_init_db()

@@ -1,6 +1,7 @@
 import os
 from flask import Flask, send_from_directory
-from main.utils import construct_master_list
+from main.utils import construct_master_list, DatabaseReading
+from psycopg_pool import ConnectionPool
 
 def update_png_paths_and_create_serve_function(app):
     """
@@ -46,8 +47,9 @@ def create_app():
 
     # Construct the master list and store it in the app config
     app.config['MASTER_LIST'] = construct_master_list(app.config['DATA_FOLDER'])
-
-    # Update paths in the master list and add the serve route
+    pool = ConnectionPool(conninfo="dbname=boost-beh host=localhost port=5432")
+    db_utils = DatabaseReading(db_name="boost-beh", user="user", password="pass", data_folder="/path/to/data", pool=pool)    # Update paths in the master list and add the serve route
+    
     with app.app_context():
         update_png_paths_and_create_serve_function(app)
 

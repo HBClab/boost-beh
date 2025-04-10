@@ -1,7 +1,137 @@
 from flask import current_app, jsonify
 import os
 import pandas as pd
+import logging
+import re
 
+class DatabaseReading:
+    def __init__(self, pool):
+        """
+        Initializes the DatabaseReading class with a connection pool.
+        
+        :param pool: A connection pool instance (should have a method to acquire a connection).
+        """
+        self.pool = pool
+
+    def get_results(self, table, columns="*", joins=None, conditions=None, order_by=None):
+        """
+        Retrieves rows from the specified table with optional joins, conditions, and ordering.
+
+        :param table: The main table name (e.g., "site").
+        :param columns: The columns to select (default is "*").
+        :param joins: A list of JOIN clauses as strings (e.g., ["INNER JOIN orders ON site.id = orders.site_id"]).
+        :param conditions: A string containing the WHERE clause conditions (e.g., "site.status = 'active'").
+        :param order_by: A string specifying the ORDER BY clause (e.g., "orders.date DESC").
+        :return: A list of rows from the table.
+        """
+        query = f"SELECT {columns} FROM {table}"
+
+        if joins:
+            query += " " + " ".join(joins)
+
+        if conditions:
+            query += f" WHERE {conditions}"
+
+        if order_by:
+            query += f" ORDER BY {order_by}"
+
+        query += ";"  # end properly
+
+        results = []
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                results = cur.fetchall()
+
+        return results
+
+    def create_data_dict(self):
+        """
+        Creates a nested dictionary organized by subject_id, with each subject containing its site,
+        project (study name), and tasks. Each task dictionary contains a list of session details
+        (date, category, png_paths, and session number).
+        
+        Dictionary structure:
+            {
+                subject_id: {
+                    "site": <site_name>,
+                    "project": <project_name>,  # e.g. 'int' or 'obs'
+                    "tasks": {
+                        task_name: [
+                            {
+                                "session": <session_number as int>,
+                                "date": <date as string>,
+                                "category": <category as string>,
+                                "png_paths": <list of png paths>
+                            },
+                            ...
+                        ]
+                    }
+                },
+                ...
+            }
+        
+        :return: The constructed dictionary.
+        """
+        data_dict = {}
+        query = """
+            SELECT subject.id AS subject_id,
+                   site.name AS site,
+                   study.name AS project,
+                   task.name AS task_name,
+                   session.session_name AS session_name, -- Stores 'ses-#'
+                   session.date AS date,
+                   session.category AS category,
+                   session.plot_paths AS png_paths
+            FROM subject
+            JOIN site ON subject.site_id = site.id
+            JOIN study ON site.study_id = study.id
+            JOIN task ON task.subject_id = subject.id
+            JOIN session ON session.task_id = task.id
+            ORDER BY subject.id, task.name, session.date;
+        """
+        with self.pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                rows = cur.fetchall()
+                for row in rows:
+                    subject_id, site, project, task_name, session_name, date, category, png_paths = row
+                    
+                    # Extract session number (integer) from 'ses-#' format
+                    session_number = self._extract_session_number(session_name)
+
+                    # Ensure subject entry exists
+                    if subject_id not in data_dict:
+                        data_dict[subject_id] = {
+                            "site": site,
+                            "project": project,
+                            "tasks": {}
+                        }
+                    
+                    # Ensure task entry exists for this subject
+                    if task_name not in data_dict[subject_id]["tasks"]:
+                        data_dict[subject_id]["tasks"][task_name] = []
+
+                    # Append session details to the task list
+                    data_dict[subject_id]["tasks"][task_name].append({
+                        "session": session_number,
+                        "date": date if date is not None else "",
+                        "category": str(category) if category is not None else "",
+                        "png_paths": png_paths if png_paths is not None else []
+                    })
+        return data_dict
+
+    def _extract_session_number(self, session_name):
+        """
+        Extracts the session number from a session_name string in 'ses-#' format.
+        
+        :param session_name: The session string (e.g., "ses-1")
+        :return: The session number as an integer, or None if not found.
+        """
+        match = re.search(r"ses-(\d+)", session_name)
+        return int(match.group(1)) if match else None
+
+        
 def construct_master_list(data_folder):
     """
     Constructs a master list of all tasks grouped by Subject ID at application startup.

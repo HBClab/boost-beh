@@ -24,7 +24,7 @@ class Pull:
         self.taskName = taskName
         self.proxy = proxy
 
-    def load(self, days_ago=1):
+    def load(self, days_ago=99):
 
         from datetime import datetime, timedelta
 

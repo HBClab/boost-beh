@@ -21,7 +21,7 @@ class CONVERT_TO_CSV:
             tweets = []
 
             for line in lines:
-                print(line)
+                #print(line)
                 if line.strip():
                     try:
                         tweets.append(json.loads(line))

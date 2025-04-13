@@ -108,50 +108,48 @@ class Handler:
                                      task=task)
         return categories, plots
 
-    def qc_ps_dfs(self, dfs, task):
-        categories, plots = [], []
-        plot_instance = PS_PLOTS()
-        print(task)
+def qc_ps_dfs(self, dfs, task):
+    categories, plots = [], []
+    plot_instance = PS_PLOTS()
+    print(task)
 
-        if task in ['PC', 'LC']:
-            ps_instance = PS_QC('response_time', 'correct', 1, 0, 'block_c', 30000)
-            for df in dfs[:]:  # use a copy to safely modify the list during iteration
-                try:
-                    subject = df['subject_id'][1]
-                except Exception as e:
-                    print(f"Skipping df due to error accessing subject_id: {e}")
-                    dfs.remove(df)
-                    continue
+    # Build a list of only valid DataFrames
+    valid_dfs = []
+    for df in dfs:
+        try:
+            # Use .iloc for a safe element access
+            _ = df['subject_id'].iloc[1]
+            valid_dfs.append(df)
+        except Exception as e:
+            print(f"Skipping df due to error accessing subject_id: {e}")
 
-                print(f"qcing {subject}")
-                category = ps_instance.ps_qc(df, threshold=0.6)
-                plot = plot_instance.lc_plot(df)
-                print(f"Category = {category}")
-                categories.append([subject, category, df])
-                plots.append([subject, plot])
+    # Process only the valid DataFrames
+    if task in ['PC', 'LC']:
+        ps_instance = PS_QC('response_time', 'correct', 1, 0, 'block_c', 30000)
+        for df in valid_dfs:
+            subject = df['subject_id'].iloc[1]
+            print(f"qcing {subject}")
+            category = ps_instance.ps_qc(df, threshold=0.6)
+            plot = plot_instance.lc_plot(df)
+            print(f"Category = {category}")
+            categories.append([subject, category, df])
+            plots.append([subject, plot])
+    else:
+        ps_instance = PS_QC('block_dur', 'correct', 1, 0, 'block_c', 125)
+        for df in valid_dfs:
+            subject = df['subject_id'].iloc[1]
+            print(f"qcing {subject}")
+            category = ps_instance.ps_qc(df, threshold=0.6, DSST=True)
+            plot = plot_instance.dsst_plot(df)
+            print(f"Category = {category}")
+            categories.append([subject, category, df])
+            plots.append([subject, plot])
 
-        else:
-            ps_instance = PS_QC('block_dur', 'correct', 1, 0, 'block_c', 125)
-            for df in dfs[:]:
-                try:
-                    subject = df['subject_id'][1]
-                except Exception as e:
-                    print(f"Skipping df due to error accessing subject_id: {e}")
-                    dfs.remove(df)
-                    continue
+    save_instance = SAVE_EVERYTHING()
+    save_instance.save_dfs(categories=categories, task=task)
+    save_instance.save_plots(plots=plots, task=task)
 
-                print(f"qcing {subject}")
-                category = ps_instance.ps_qc(df, threshold=0.6, DSST=True)
-                plot = plot_instance.dsst_plot(df)
-                print(f"Category = {category}")
-                categories.append([subject, category, df])
-                plots.append([subject, plot])
-
-        save_instance = SAVE_EVERYTHING()
-        save_instance.save_dfs(categories=categories, task=task)
-        save_instance.save_plots(plots=plots, task=task)
-
-        return categories, plots
+    return categories, plots
 
 
     def qc_mem_dfs(self, dfs, task):

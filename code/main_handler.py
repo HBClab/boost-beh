@@ -220,14 +220,18 @@ class Handler:
 if __name__ == '__main__':
     import os
     import sys
+    from data_processing.create_json import create_json
 
     task_list = ['AF', 'NF', 'NTS', 'ATS', 'NNB', 'VNB', 'WL', 'DWL', 'FN', 'SM', 'PC', 'LC', 'DSST']
     if sys.argv[1] == 'all':
         instance = Handler()
         for task in task_list:
             csv_dfs = instance.pull(task=task)
+            create_json('../data')
     elif sys.argv[1] in task_list:
         instance = Handler()
         csv_dfs = instance.pull(task=sys.argv[1])
+        create_json('../data')
+
 
 

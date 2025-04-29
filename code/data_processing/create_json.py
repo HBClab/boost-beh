@@ -108,7 +108,7 @@ def create_json(data_folder):
     import json
 
 
-    with open('/home/runner/work/boost-beh/boost-beh/data.json', 'w') as f:
+    with open('data.json', 'w') as f:
         json.dump(master_data, f, indent=2)
     return None
 

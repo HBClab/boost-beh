@@ -1,26 +1,11 @@
-import os 
+import os
 import pandas as pd
-import numpy as np
+import json
 
-
-
-def create_json(data_folder):
+def create_json(data_folder, out_file='data.json'):
     """
-    Constructs a master list of all tasks grouped by Subject ID at application startup.
-
-    Output:
-        Dictionary:
-            subject_id: {
-                site: str,
-                project: str,  # 'int' or 'obs'
-                tasks: {
-                    task_name: {
-                        date: str,
-                        category: str,
-                        png_paths: list
-                    }
-                }
-            }
+    Constructs a master list of all tasks grouped by Subject ID at application startup,
+    with each session saved as a separate task entry (keyed as TASKNAME_ses-SESSION).
     """
     directories = ['int', 'obs']
     master_data = {}
@@ -28,89 +13,62 @@ def create_json(data_folder):
     for directory in directories:
         dir_path = os.path.join(data_folder, directory)
 
-        for site in os.listdir(dir_path):  # Iterate over site folders (e.g., UI, NE)
+        for site in os.listdir(dir_path):
             site_path = os.path.join(dir_path, site)
+            if not os.path.isdir(site_path): continue
 
-            if not os.path.isdir(site_path):
-                continue
-
-            for subject_id in os.listdir(site_path):  # Iterate over subject folders (e.g., 8006, 9002)
+            for subject_id in os.listdir(site_path):
                 subject_path = os.path.join(site_path, subject_id)
+                if not os.path.isdir(subject_path): continue
 
-                if not os.path.isdir(subject_path):
-                    continue
+                master_data.setdefault(subject_id, {
+                    'site': site,
+                    'project': directory,
+                    'tasks': {}
+                })
 
-                # Initialize subject entry if not already in master_data
-                if subject_id not in master_data:
-                    master_data[subject_id] = {
-                        'site': site,
-                        'project': directory,
-                        'tasks': {}
-                    }
-
-                for task_name in os.listdir(subject_path):  # Iterate over task folders (e.g., AF, DSST)
+                for task_name in os.listdir(subject_path):
                     task_path = os.path.join(subject_path, task_name)
-
-                    if not os.path.isdir(task_path):
-                        continue
+                    if not os.path.isdir(task_path): continue
 
                     plots_path = os.path.join(task_path, 'plot')
-                    data_path = os.path.join(task_path, 'data')
+                    data_path  = os.path.join(task_path, 'data')
 
-                    # Initialize task entry if not already in tasks
-                    if task_name not in master_data[subject_id]['tasks']:
-                        master_data[subject_id]['tasks'][task_name] = {
-                            'date': None,
-                            'category': None,
-                            'png_paths': [],
-                            'session': None
-                        }
+                    # find all CSVs (one per session)
+                    if not os.path.isdir(data_path):
+                        continue
+                    csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
 
-                    # Extract date and category from CSV in data directory
-                    csv_file = [
-                        file for file in os.listdir(data_path)
-                        if file.endswith('.csv')
-                    ]
-                    if csv_file:
-                        csv_filename = csv_file[0]
+                    for csv_filename in csv_files:
+                        # parse session, category, and date
+                        parts = csv_filename.split('_')
+                        session_value  = parts[-2].replace('ses-', '')
+                        category_value = parts[-1].replace('.csv', '').replace('cat-', '')
 
-                        # Load the CSV into a DataFrame
                         df = pd.read_csv(os.path.join(data_path, csv_filename))
-
-                        # Validate and extract the 'Date' column
-                        if 'datetime' in df.columns:
-                            date_value = df['datetime'].iloc[0]  # Extract the first value in the 'Date' column
-                        else:
-                            date_value = None  # Set to None or handle it as needed
-
-                        # Extract the category from the filename
-                        category_value = csv_filename.split('_')[-1].replace('.csv', '').replace('cat-', '')
-                        session_value = csv_filename.split('_')[-2].replace('ses-', '')
-
-                        # Update master_data
-                        master_data[subject_id]['tasks'][task_name]['date'] = date_value
-                        master_data[subject_id]['tasks'][task_name]['category'] = category_value
-                        master_data[subject_id]['tasks'][task_name]['session'] = session_value
-
-                        # Remove the DataFrame from memory
+                        date_value = df['datetime'].iloc[0] if 'datetime' in df.columns else None
                         del df
 
-                    # Collect PNG file paths from plot directory
-                    if os.path.exists(plots_path):
-                        png_files = [
-                            os.path.join(plots_path, png)
-                            for png in os.listdir(plots_path)
-                            if png.endswith('.png')
-                        ]
-                        master_data[subject_id]['tasks'][task_name]['png_paths'].extend(png_files)
+                        # build a unique task key for this session
+                        task_key = f"{task_name}_ses-{session_value}"
 
+                        # collect only PNGs for this session
+                        png_list = []
+                        if os.path.isdir(plots_path):
+                            for png in os.listdir(plots_path):
+                                if png.endswith('.png') and f"ses-{session_value}" in png:
+                                    png_list.append(os.path.join(plots_path, png))
 
-    import json
+                        # assign
+                        master_data[subject_id]['tasks'][task_key] = {
+                            'date': date_value,
+                            'category': category_value,
+                            'png_paths': sorted(png_list),
+                            'session': session_value
+                        }
 
-
-    with open('data.json', 'w') as f:
+    # write out
+    with open(out_file, 'w') as f:
         json.dump(master_data, f, indent=2)
-    return None
 
-
-
+    return master_data

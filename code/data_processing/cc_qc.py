@@ -86,7 +86,17 @@ class CCqC():
             CATEGORY = 2
             print(f"FOR TASK SWITCHING -> Average accuracy at or below 0.5 across conditions and CATEGORY set to 2")
 
-        problematic_conditions = QC_UTILS.cond_block_not_reported(raw, self.ACC_COLUMN_NAME, self.COND_COLUMN_NAME, self.INCORRECT_SYMBOL)
+        # Check for blocks/conditions where every response is either incorrect
+        # or not reported. The first argument expects the column that defines
+        # the blocks/conditions and the second is the accuracy column. The
+        # previous implementation mistakenly flipped these arguments which
+        # caused the check to operate on the wrong columns.
+        problematic_conditions = QC_UTILS.cond_block_not_reported(
+            raw,
+            self.COND_COLUMN_NAME,
+            self.ACC_COLUMN_NAME,
+            self.INCORRECT_SYMBOL,
+        )
 
         if len(problematic_conditions) != 0:
             CATEGORY = 3

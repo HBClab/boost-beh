@@ -19,7 +19,11 @@ class Handler:
             "DWL": [948, 974, 985, 900, 921, 934],
             "FN": [950, 964, 987, 902, 923, 936],
             "LC": [951, 976, 988, 903, 924, 937],
-            "NF": [980, 981, 982, 978, 979, 977],
+            "NF": {
+                "A": [978, 980],
+                "B": [979, 981],
+                "C": [977, 982]
+            },
             "NNB": [946, 967, 989, 905, 929, 939],
             "NTS": [953, 968, 991, 906, 930, 940],
             "PC": [954, 969, 992, 912, 925, 941],
@@ -30,19 +34,27 @@ class Handler:
 
 
     def pull(self, task):
-        pull_instance = Pull(
-            self.IDs[task],
-            tease="WEEEEEEEEEEEEEE",
-            token="jap_5ThOJ14yf7z1EPEUpAoZYMWoETZcmJk305719",
-            taskName=task,
-            proxy=False
+        nf_flag = (task == "NF")
+        puller = Pull(
+            taskIds = self.IDs[task],
+            tease   = "WEEEEEEEEEEEEEE",
+            token   = "jap_5ThOJ14yf7z1EPEUpAoZYMWoETZcmJk305719",
+            taskName= task,
+            proxy   = False,
+            NF      = nf_flag
         )
 
-        txt_dfs = pull_instance.load(days_ago=90)
-        return self.convert_to_csv(txt_dfs, task)
+        # returns a flat list of already-flattened DataFrames, each
+        # with a task_vers column set (A, B, C, or None for non-NF)
+        txt_dfs = puller.load(days_ago=365)
 
-    def convert_to_csv(self, txt_dfs, task):
-        csv_instance = CONVERT_TO_CSV(task)
+        # now convert (no special NF logic needed here)
+        csv_dfs = CONVERT_TO_CSV(task).convert_to_csv(txt_dfs)
+
+        return csv_dfs, self.choose_construct(csv_dfs, task)
+
+    def convert_to_csv(self, txt_dfs, task, subj_map):
+        csv_instance = CONVERT_TO_CSV(task, version_map=subj_map)
         csv_dfs = csv_instance.convert_to_csv(txt_dfs)
         return csv_dfs, self.choose_construct(csv_dfs, task)
 
@@ -74,7 +86,10 @@ class Handler:
                                INCORRECT_SYMBOL=0,
                                COND_COLUMN_NAME='condition')
             for df in dfs:
+
                 subject = df['subject_id'][1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = qc_instance.cc_qc(df, threshold=0.5)
                 if task in ['AF', 'NF']:
@@ -95,6 +110,8 @@ class Handler:
                                COND_COLUMN_NAME='block_cond')
             for df in dfs:
                 subject = df['subject_id'][1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = qc_instance.cc_qc(df, threshold=0.5, TS=True)
                 plot = plot_instance.ats_nts_plot(df)
@@ -128,6 +145,8 @@ class Handler:
             ps_instance = PS_QC('response_time', 'correct', 1, 0, 'block_c', 30000)
             for df in valid_dfs:
                 subject = df['subject_id'].iloc[1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = ps_instance.ps_qc(df, threshold=0.6)
                 plot = plot_instance.lc_plot(df)
@@ -138,6 +157,8 @@ class Handler:
             ps_instance = PS_QC('block_dur', 'correct', 1, 0, 'block_c', 125)
             for df in valid_dfs:
                 subject = df['subject_id'].iloc[1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = ps_instance.ps_qc(df, threshold=0.6, DSST=True)
                 plot = plot_instance.dsst_plot(df)
@@ -160,6 +181,8 @@ class Handler:
             mem_instance = MEM_QC('response_time', 'correct', 1, 0, 'block_c', 4000)
             for df in dfs:
                 subject = df['subject_id'][1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = mem_instance.fn_sm_qc(df, threshold=0.5)
                 plot = plot_instance.fn_plot(df)
@@ -170,6 +193,8 @@ class Handler:
             mem_instance = MEM_QC('response_time', 'correct', 1, 0, 'block_c', 2000)
             for df in dfs:
                 subject = df['subject_id'][1]
+                if not subject_is_valid(subject):
+                    continue
                 print(f"qcing {subject}")
                 category = mem_instance.fn_sm_qc(df, threshold=0.5)
                 plot = plot_instance.sm_plot(df)
@@ -188,20 +213,58 @@ class Handler:
         plot_instance = MEM_PLOTS()
         print(task)
         if task in ['WL']:
-            for df in dfs:
+            print(f"Starting WL task, {len(dfs)} dfs to process")
+            for idx, df in enumerate(dfs):
+                print(f"\n→ Processing df #{idx}")
+
+                # Check if the expected columns exist
+                if 'subject_id' not in df.columns:
+                    print(f"  ❌ Missing 'subject_id' column in df #{idx}")
+                    continue
+                if 'task_vers' not in df.columns:
+                    print(f"  ❌ Missing 'task_vers' column in df #{idx}")
+                    continue
+
+                # Check if the dataframe has enough rows
+                if len(df) <= 1:
+                    print(f"  ⚠️  Not enough rows in df #{idx}: len={len(df)}")
+                    continue
+
                 subject = df['subject_id'][1]
-                version = df['task_vers'][1]
+                if not subject_is_valid(subject):
+                    continue
+                print(f"  🧪 Raw task_vers column values:\n{df['task_vers']}")
+                valid_df = df.dropna(subset=['task_vers'])
+                if valid_df.empty:
+                    print(f"  ⚠️ No valid task_vers in df #{idx}")
+                    continue
+                version = valid_df['task_vers'].iloc[0]
+                print(f"  ➕ Found version: {version}")
+                print(f"  ➕ Found version: {version}")
+
+                if version not in ['A', 'B', 'C']:
+                    print(f"  🚫 Skipping unsupported version: {version}")
+                    continue
+
                 wl_instance = WL_QC()
-                print(f"qcing {subject}")
-                df_all, category = wl_instance.wl_qc(df, version)
-                plot = plot_instance.wl_plot(df_all)
-                print(f"Category = {category}")
-                categories.append([subject, category, df])
-                plots.append([subject, plot])
+                print(f"  🔍 QC-ing subject {subject} with version {version}")
+
+                try:
+                    df_all, category = wl_instance.wl_qc(df, version)
+                    plot = plot_instance.wl_plot(df_all)
+                    print(f"  ✅ Category = {category}")
+                    categories.append([subject, category, df])
+                    plots.append([subject, plot])
+                except Exception as e:
+                    print(f"  ❌ QC failed for subject {subject}: {e}")
         elif task in ['DWL']:
             for df in dfs:
                 subject = df['subject_id'][1]
+                if not subject_is_valid(subject):
+                    continue
                 version = df['task_vers'][1]
+                if version not in ['A', 'B', 'C']:
+                    continue
                 dwl_instance = WL_QC()
                 print(f"qcing {subject}")
                 df_all, category = dwl_instance.dwl_qc(df, version)
@@ -216,11 +279,16 @@ class Handler:
                                     task=task)
         return categories, plots
 
+def subject_is_valid(subject):
+    subject_str = str(subject)
+    return subject_str.startswith(('7', '8', '9')) and subject_str not in ('9989', '9999')
+
 
 if __name__ == '__main__':
     import os
     import sys
     from data_processing.create_json import create_json
+    from group.group import Group
 
     task_list = ['AF', 'NF', 'NTS', 'ATS', 'NNB', 'VNB', 'WL', 'DWL', 'FN', 'SM', 'PC', 'LC', 'DSST']
     if sys.argv[1] == 'all':
@@ -228,10 +296,14 @@ if __name__ == '__main__':
         for task in task_list:
             csv_dfs = instance.pull(task=task)
             create_json('data')
+            Group().group()
     elif sys.argv[1] in task_list:
         instance = Handler()
         csv_dfs = instance.pull(task=sys.argv[1])
         create_json('data')
+        Group().group()
+
+
 
 
 

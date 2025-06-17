@@ -295,13 +295,13 @@ if __name__ == '__main__':
         instance = Handler()
         for task in task_list:
             csv_dfs = instance.pull(task=task)
-            create_json('data')
-            Group().group()
+        create_json('data')
+        Group().group()
     elif sys.argv[1] in task_list:
         instance = Handler()
         csv_dfs = instance.pull(task=sys.argv[1])
-        create_json('data')
-        Group().group()
+    create_json('data')
+    Group().group()
 
 
 

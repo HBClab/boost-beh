@@ -973,3 +973,4 @@ class Group:
     def load_and_tag(self, task_code, columns, filter_col=None):
         df = self.load_task_session_data(task_code, columns)
         df = self.add_study_and_site_columns(df)
+        return df

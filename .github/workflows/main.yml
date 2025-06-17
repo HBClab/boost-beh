@@ -1,8 +1,8 @@
-name: temp name
+name: Boost CA workflow
 
 on:
-  push:
-    branches: [ "main" ]
+  schedule:
+    - cron: '1 0 * * *'
 
 jobs:
   build:

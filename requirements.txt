@@ -1,9 +1,10 @@
-Flask
 fuzzywuzzy
 matplotlib
 numpy
 pandas
+Pillow
+Pillow
 Requests
+scipy
 seaborn
 termcolor
-Gunicorn

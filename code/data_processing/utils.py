@@ -5,40 +5,44 @@ import numpy as np
 
 from termcolor import cprint
 
+# utils.py
+
+import pandas as pd
+import json
+
 class CONVERT_TO_CSV:
-    def __init__(self, task, init_path='./data/raw'):
+    """
+    No special NF branching here—Pull already returned
+    per-trial rows with task_vers injected where needed.
+    """
+    def __init__(self, task, init_path: str = "./data/raw"):
+        self.task      = task
         self.init_path = init_path
-        self.task = task
 
-    def convert_to_csv(self, txt_dfs):
-        import json
-        import pandas as pd
-        new_dfs = []
-
-        for txt_df in txt_dfs:
-            file_content = txt_df["file_content"].values[0]
-            lines = file_content.splitlines()
-            tweets = []
-
-            for line in lines:
-                #print(line)
-                if line.strip():
+    def convert_to_csv(self, dfs: list[pd.DataFrame]) -> list[pd.DataFrame]:
+        final = []
+        for df in dfs:
+            # If we ever get a fallback with raw text:
+            if "file_content" in df.columns:
+                text  = df["file_content"].iat[0]
+                lines = [L for L in text.splitlines() if L.strip()]
+                objs  = []
+                for L in lines:
                     try:
-                        tweets.append(json.loads(line))
-                    except json.JSONDecodeError as e:
-                        cprint(f"JSONDecodeError: {e} on line: {line}", 'red')
-
-            if not tweets:
-                # If file is empty or has no valid lines, skip
-                continue
-
-            flattened_df = pd.json_normalize(tweets, "data")
-            new_dfs.append(flattened_df)
-
-        return new_dfs
-
-    def save_csv(self):
-        return None
+                        objs.append(json.loads(L))
+                    except json.JSONDecodeError:
+                        continue
+                if not objs:
+                    continue
+                meta_keys = [k for k in objs[0].keys() if k != "data"]
+                flat = pd.json_normalize(
+                    objs, record_path="data", meta=meta_keys, errors="ignore"
+                )
+                final.append(flat)
+            else:
+                # otherwise, it’s already a flattened DataFrame
+                final.append(df)
+        return final
 
 
 class QC_UTILS:

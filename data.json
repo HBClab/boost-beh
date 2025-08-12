@@ -32466,6 +32466,126 @@
       }
     }
   },
+  "7190": {
+    "site": "UI",
+    "project": "obs",
+    "tasks": {
+      "NF_ses-1": {
+        "date": "Mon Aug 11 2025 17:31:40 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/NF/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/NF/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "VNB_ses-1": {
+        "date": "Mon Aug 11 2025 18:23:57 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/VNB/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/VNB/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "NNB_ses-1": {
+        "date": "Mon Aug 11 2025 17:52:28 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/NNB/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/NNB/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "SM_ses-1": {
+        "date": "Mon Aug 11 2025 18:58:00 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/SM/plot/7190_ses-1.png"
+        ],
+        "session": "1"
+      },
+      "DWL_ses-1": {
+        "date": "Mon Aug 11 2025 19:22:47 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/DWL/plot/7190_ses-1.png"
+        ],
+        "session": "1"
+      },
+      "AF_ses-1": {
+        "date": "Mon Aug 11 2025 18:06:33 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/AF/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/AF/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "LC_ses-1": {
+        "date": "Mon Aug 11 2025 19:16:40 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/LC/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/LC/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "DSST_ses-1": {
+        "date": "Mon Aug 11 2025 19:18:39 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/DSST/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/DSST/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "NTS_ses-1": {
+        "date": "Mon Aug 11 2025 17:39:57 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/NTS/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/NTS/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "PC_ses-1": {
+        "date": "Mon Aug 11 2025 19:14:32 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/PC/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/PC/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "ATS_ses-1": {
+        "date": "Mon Aug 11 2025 18:13:21 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/ATS/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/ATS/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "FN_ses-1": {
+        "date": "Mon Aug 11 2025 18:50:50 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/FN/plot/7190_ses-1_plot1.png",
+          "data/obs/UI/7190/FN/plot/7190_ses-1_plot2.png"
+        ],
+        "session": "1"
+      },
+      "WL_ses-1": {
+        "date": "Mon Aug 11 2025 18:37:59 GMT-0500 (Central Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/obs/UI/7190/WL/plot/7190_ses-1.png"
+        ],
+        "session": "1"
+      }
+    }
+  },
   "7177": {
     "site": "UI",
     "project": "obs",

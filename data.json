@@ -2730,6 +2730,15 @@
     "site": "NE",
     "project": "int",
     "tasks": {
+      "NF_ses-2": {
+        "date": "Tue Aug 19 2025 09:50:32 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/NF/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/NF/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "NF_ses-1": {
         "date": "Wed Apr 02 2025 16:08:54 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2738,6 +2747,15 @@
           "data/int/NE/9010/NF/plot/9010_ses-1_plot2.png"
         ],
         "session": "1"
+      },
+      "VNB_ses-2": {
+        "date": "Tue Aug 19 2025 10:45:20 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/VNB/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/VNB/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
       },
       "VNB_ses-1": {
         "date": "Wed Apr 02 2025 17:03:54 GMT-0400 (Eastern Daylight Time)",
@@ -2748,6 +2766,15 @@
         ],
         "session": "1"
       },
+      "NNB_ses-2": {
+        "date": "Tue Aug 19 2025 10:10:44 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/NNB/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/NNB/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "NNB_ses-1": {
         "date": "Wed Apr 02 2025 16:29:28 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2757,6 +2784,14 @@
         ],
         "session": "1"
       },
+      "SM_ses-2": {
+        "date": "Tue Aug 19 2025 11:26:20 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/SM/plot/9010_ses-2.png"
+        ],
+        "session": "2"
+      },
       "SM_ses-1": {
         "date": "Wed Apr 02 2025 17:38:17 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2765,6 +2800,14 @@
         ],
         "session": "1"
       },
+      "DWL_ses-2": {
+        "date": "Tue Aug 19 2025 11:52:24 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/DWL/plot/9010_ses-2.png"
+        ],
+        "session": "2"
+      },
       "DWL_ses-1": {
         "date": "Wed Apr 02 2025 18:04:46 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2772,6 +2815,15 @@
           "data/int/NE/9010/DWL/plot/9010_ses-1.png"
         ],
         "session": "1"
+      },
+      "AF_ses-2": {
+        "date": "Tue Aug 19 2025 10:23:38 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/AF/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/AF/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
       },
       "AF_ses-1": {
         "date": "Wed Apr 02 2025 16:42:51 GMT-0400 (Eastern Daylight Time)",
@@ -2782,6 +2834,15 @@
         ],
         "session": "1"
       },
+      "LC_ses-2": {
+        "date": "Tue Aug 19 2025 11:45:57 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/LC/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/LC/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "LC_ses-1": {
         "date": "Wed Apr 02 2025 17:58:59 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2790,6 +2851,15 @@
           "data/int/NE/9010/LC/plot/9010_ses-1_plot2.png"
         ],
         "session": "1"
+      },
+      "DSST_ses-2": {
+        "date": "Tue Aug 19 2025 11:48:17 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/DSST/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/DSST/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
       },
       "DSST_ses-1": {
         "date": "Wed Apr 02 2025 18:01:11 GMT-0400 (Eastern Daylight Time)",
@@ -2800,6 +2870,15 @@
         ],
         "session": "1"
       },
+      "NTS_ses-2": {
+        "date": "Tue Aug 19 2025 09:58:45 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/NTS/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/NTS/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "NTS_ses-1": {
         "date": "Wed Apr 02 2025 16:16:39 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2808,6 +2887,15 @@
           "data/int/NE/9010/NTS/plot/9010_ses-1_plot2.png"
         ],
         "session": "1"
+      },
+      "PC_ses-2": {
+        "date": "Tue Aug 19 2025 11:43:29 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/PC/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/PC/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
       },
       "PC_ses-1": {
         "date": "Wed Apr 02 2025 17:56:35 GMT-0400 (Eastern Daylight Time)",
@@ -2818,6 +2906,15 @@
         ],
         "session": "1"
       },
+      "ATS_ses-2": {
+        "date": "Tue Aug 19 2025 10:32:10 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/ATS/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/ATS/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "ATS_ses-1": {
         "date": "Wed Apr 02 2025 16:50:14 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2827,6 +2924,15 @@
         ],
         "session": "1"
       },
+      "FN_ses-2": {
+        "date": "Tue Aug 19 2025 11:19:22 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/FN/plot/9010_ses-2_plot1.png",
+          "data/int/NE/9010/FN/plot/9010_ses-2_plot2.png"
+        ],
+        "session": "2"
+      },
       "FN_ses-1": {
         "date": "Wed Apr 02 2025 17:31:50 GMT-0400 (Eastern Daylight Time)",
         "category": "1",
@@ -2835,6 +2941,14 @@
           "data/int/NE/9010/FN/plot/9010_ses-1_plot2.png"
         ],
         "session": "1"
+      },
+      "WL_ses-2": {
+        "date": "Tue Aug 19 2025 11:02:50 GMT-0400 (Eastern Daylight Time)",
+        "category": "1",
+        "png_paths": [
+          "data/int/NE/9010/WL/plot/9010_ses-2.png"
+        ],
+        "session": "2"
       },
       "WL_ses-1": {
         "date": "Wed Apr 02 2025 17:18:09 GMT-0400 (Eastern Daylight Time)",

@@ -28,6 +28,7 @@ class Handler:
             "WL": [958, 972, 995, 910, 927, 944]
         }
 
+        self.master_acc = pd.DataFrame(columns=['task', 'subject_id', 'session', 'condition', 'accuracy'])
 
     def pull(self, task):
         pull_instance = Pull(
@@ -61,53 +62,72 @@ class Handler:
             return print("ERROR: TASK NAME NOT VALID")
 
     def qc_cc_dfs(self, dfs, task):
-        categories, plots = [], []
-        plot_instance = CC_PLOTS()
-        print(task)
-        if task in ['AF', 'NF', 'NNB', 'VNB']:
-            print("running AF version")
-            qc_instance = CCqC(task,
-                               MAXRT=1800,
-                               RT_COLUMN_NAME='response_time',
-                               ACC_COLUMN_NAME='correct',
-                               CORRECT_SYMBOL=1,
-                               INCORRECT_SYMBOL=0,
-                               COND_COLUMN_NAME='condition')
-            for df in dfs:
-                subject = df['subject_id'][1]
-                print(f"qcing {subject}")
-                category = qc_instance.cc_qc(df, threshold=0.5)
-                if task in ['AF', 'NF']:
-                    plot = plot_instance.af_nf_plot(df)
-                elif task in ['NNB', 'VNB']:
-                    plot = plot_instance.nnb_vnb_plot(df)
-                print(f"Category = {category}")
-                categories.append([subject, category, df])
-                plots.append([subject, plot])
-                print(categories)
+        # ensure master_acc exists
+        if not hasattr(self, "master_acc"):
+            self.master_acc = pd.DataFrame(
+                columns=["task", "subject_id", "session", "condition", "accuracy"]
+            )
 
-        else:
-            qc_instance = CCqC(task,
-                               MAXRT=1800,
-                               RT_COLUMN_NAME='response_time',
-                               ACC_COLUMN_NAME='correct',
-                               CORRECT_SYMBOL=1,
-                               INCORRECT_SYMBOL=0,
-                               COND_COLUMN_NAME='block_cond')
-            for df in dfs:
-                subject = df['subject_id'][1]
-                print(f"qcing {subject}")
+        categories, plots, master_rows = [], [], []
+        plot_instance = CC_PLOTS()
+
+        # pick the grouping column for accuracy
+        cond_col = "condition" if task in ["AF", "NF", "NNB", "VNB"] else "block_cond"
+
+        qc_instance = CCqC(
+            task,
+            MAXRT=1800,
+            RT_COLUMN_NAME="response_time",
+            ACC_COLUMN_NAME="correct",
+            CORRECT_SYMBOL=1,
+            INCORRECT_SYMBOL=0,
+            COND_COLUMN_NAME=cond_col,
+        )
+
+        for df in dfs:
+            subject = df["subject_id"].iloc[0]
+            session = df["session"].iloc[0] if "session" in df.columns else None
+
+            # run QC + choose plot
+            if task in ["AF", "NF"]:
+                category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                plot = plot_instance.af_nf_plot(df)
+            elif task in ["NNB", "VNB"]:
+                category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                plot = plot_instance.nnb_vnb_plot(df)
+            else:
                 category = qc_instance.cc_qc(df, threshold=0.5, TS=True)
                 plot = plot_instance.ats_nts_plot(df)
-                print(f"Category = {category}")
-                categories.append([subject, category, df])
-                plots.append([subject, plot])
-                print(categories)
+
+            categories.append([subject, category, df])
+            plots.append([subject, plot])
+
+            # compute accuracies per block/condition for THIS df
+            from data_processing.utils import QC_UTILS 
+            qc_util = QC_UTILS()
+            acc_by = qc_util.get_acc_by_block_cond(
+                df, block_cond_column_name=cond_col,
+                acc_column_name="correct",
+                correct_symbol=1,
+                incorrect_symbol=0,
+            )
+            for cond, acc in acc_by.items():
+                master_rows.append([task, subject, session, cond, float(acc)])
+
+        # save artifacts
         save_instance = SAVE_EVERYTHING()
-        save_instance.save_dfs(categories=categories,
-                                task=task)
-        save_instance.save_plots(plots=plots,
-                                     task=task)
+        save_instance.save_dfs(categories=categories, task=task)
+        save_instance.save_plots(plots=plots, task=task)
+
+        # append to master table
+        if master_rows:
+            self.master_acc = pd.concat(
+                [self.master_acc,
+                 pd.DataFrame(master_rows,
+                              columns=["task", "subject_id", "session", "condition", "accuracy"])],
+                ignore_index=True,
+            )
+
         return categories, plots
 
 
@@ -215,6 +235,7 @@ class Handler:
                                     task=task)
         return categories, plots
 
+# mysql 10.6.22
 
 if __name__ == '__main__':
     import os

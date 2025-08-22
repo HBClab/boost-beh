@@ -28,6 +28,7 @@ class SAVE_EVERYTHING:
             if subjectID not in self.sessions:
                 self.sessions[subjectID] = set()
             self.sessions[subjectID].add(session)
+            return subjectId, session
 
     def save_plots(self, plots, task):
         # Validate 'plots' for NoneType objects

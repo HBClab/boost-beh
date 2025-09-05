@@ -75,6 +75,9 @@
               python.pkgs.requests
               python.pkgs.httpx
 
+              # testing 
+              python.pkgs.pytest
+
               # Jupyter/IPython for interactive work
               python.pkgs.jupyterlab
               python.pkgs.ipython

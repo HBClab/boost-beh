@@ -7,6 +7,7 @@ from data_processing.wl_qc import WL_QC
 from data_processing.plot_utils import CC_PLOTS, MEM_PLOTS, PS_PLOTS
 from data_processing.save_utils import SAVE_EVERYTHING
 import pandas as pd
+from pathlib import Path
 
 
 class Handler:
@@ -146,6 +147,10 @@ class Handler:
                 ignore_index=True,
             )
 
+        # save aggregated master accuracy to meta_file.csv at project base directory
+        base_dir = Path(__file__).parents[1]
+        self.master_acc.to_csv(base_dir / "meta_file.csv", index=False)
+
         return categories, plots
 
 
@@ -179,10 +184,36 @@ class Handler:
                 plots.append([subject, plot])
 
         save_instance = SAVE_EVERYTHING()
-        save_instance.save_dfs(categories=categories,
-                                task=task)
-        save_instance.save_plots(plots=plots,
-                                    task=task)
+        save_instance.save_dfs(categories=categories, task=task)
+        save_instance.save_plots(plots=plots, task=task)
+
+        # append accuracies by block/condition to master_acc
+        master_rows = []
+        from data_processing.utils import QC_UTILS
+        qc_util = QC_UTILS()
+        cond_col = 'block_c'
+        for subject, _, df in categories:
+            session = df['session'].iloc[0] if 'session' in df.columns else None
+            acc_by = qc_util.get_acc_by_block_cond(
+                df,
+                block_cond_column_name=cond_col,
+                acc_column_name='correct',
+                correct_symbol=1,
+                incorrect_symbol=0,
+            )
+            for cond, acc in acc_by.items():
+                master_rows.append([task, subject, session, cond, float(acc)])
+        if master_rows:
+            self.master_acc = pd.concat(
+                [self.master_acc,
+                 pd.DataFrame(master_rows,
+                              columns=['task','subject_id','session','condition','accuracy'])],
+                ignore_index=True,
+            )
+
+        # save aggregated master accuracy to meta_file.csv at project base directory
+        base_dir = Path(__file__).parents[1]
+        self.master_acc.to_csv(base_dir / "meta_file.csv", index=False)
 
         return categories, plots
 
@@ -212,10 +243,37 @@ class Handler:
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
         save_instance = SAVE_EVERYTHING()
-        save_instance.save_dfs(categories=categories,
-                                task=task)
-        save_instance.save_plots(plots=plots,
-                                    task=task)
+        save_instance.save_dfs(categories=categories, task=task)
+        save_instance.save_plots(plots=plots, task=task)
+
+        # append accuracies by block/condition to master_acc
+        master_rows = []
+        from data_processing.utils import QC_UTILS
+        qc_util = QC_UTILS()
+        cond_col = 'block_c'
+        for subject, _, df in categories:
+            session = df['session'].iloc[0] if 'session' in df.columns else None
+            acc_by = qc_util.get_acc_by_block_cond(
+                df,
+                block_cond_column_name=cond_col,
+                acc_column_name='correct',
+                correct_symbol=1,
+                incorrect_symbol=0,
+            )
+            for cond, acc in acc_by.items():
+                master_rows.append([task, subject, session, cond, float(acc)])
+        if master_rows:
+            self.master_acc = pd.concat(
+                [self.master_acc,
+                 pd.DataFrame(master_rows,
+                              columns=['task','subject_id','session','condition','accuracy'])],
+                ignore_index=True,
+            )
+
+        # save aggregated master accuracy to meta_file.csv at project base directory
+        base_dir = Path(__file__).parents[1]
+        self.master_acc.to_csv(base_dir / "meta_file.csv", index=False)
+
         return categories, plots
 
     def qc_wl_dfs(self, dfs, task):
@@ -265,5 +323,3 @@ if __name__ == '__main__':
     elif sys.argv[1] in task_list:
         instance = Handler()
         csv_dfs = instance.pull(task=sys.argv[1])
-
-

@@ -74,7 +74,7 @@ class MEM_QC:
             CATEGORY = 3
             print("Found unreported condition, category set to 3 ")
 
-        return CATEGORY
+        return CATEGORY, accuracy
 
 
 

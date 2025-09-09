@@ -168,6 +168,7 @@ class CC_PLOTS:
 
             return ax2
         filtered = filter(df)
+        print(filtered.head())
         acc = _percent_acc(filtered)
         rt = _rt(filtered)
 

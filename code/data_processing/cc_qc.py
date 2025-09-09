@@ -92,7 +92,7 @@ class CCqC():
             CATEGORY = 3
             print("Found unreported condition, category set to 3 ")
 
-        return CATEGORY
-
+        # Return both the QC category and the accuracy-by-condition dictionary
+        return CATEGORY, accuracy
 
 

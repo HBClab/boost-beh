@@ -61,10 +61,12 @@
             packages = [
               python.pkgs.venvShellHook
               python.pkgs.pip
+              python.pkgs.termcolor
 
               # Data manipulation
               python.pkgs.pandas
               python.pkgs.numpy
+              python.pkgs.fuzzywuzzy
 
               # Visualization
               python.pkgs.matplotlib

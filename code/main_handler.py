@@ -105,7 +105,13 @@ class Handler:
 
         for df in dfs:
             subject = df["subject_id"].iloc[0]
-            session = df["session"].iloc[0] if "session" in df.columns else None
+            # preserve session information from available column
+            if "session" in df.columns:
+                session = df["session"].iloc[0]
+            elif "session_number" in df.columns:
+                session = df["session_number"].iloc[0]
+            else:
+                session = None
 
             # run QC + choose plot
             if task in ["AF", "NF"]:
@@ -193,7 +199,13 @@ class Handler:
         qc_util = QC_UTILS()
         cond_col = 'block_c'
         for subject, _, df in categories:
-            session = df['session'].iloc[0] if 'session' in df.columns else None
+            # preserve session information from available column
+            if 'session' in df.columns:
+                session = df['session'].iloc[0]
+            elif 'session_number' in df.columns:
+                session = df['session_number'].iloc[0]
+            else:
+                session = None
             acc_by = qc_util.get_acc_by_block_cond(
                 df,
                 block_cond_column_name=cond_col,
@@ -252,7 +264,13 @@ class Handler:
         qc_util = QC_UTILS()
         cond_col = 'block_c'
         for subject, _, df in categories:
-            session = df['session'].iloc[0] if 'session' in df.columns else None
+            # preserve session information from available column
+            if 'session' in df.columns:
+                session = df['session'].iloc[0]
+            elif 'session_number' in df.columns:
+                session = df['session_number'].iloc[0]
+            else:
+                session = None
             acc_by = qc_util.get_acc_by_block_cond(
                 df,
                 block_cond_column_name=cond_col,

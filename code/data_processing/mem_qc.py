@@ -68,7 +68,15 @@ class MEM_QC:
                 print(f"Condition/Block '{condition}' has accuracy == 0% and CATEGORY set to 3")
         avg_acc /= len(accuracy)
 
-        problematic_conditions = QC_UTILS.cond_block_not_reported(raw, self.ACC_COLUMN_NAME, self.COND_COLUMN_NAME, self.INCORRECT_SYMBOL)
+        # Detect any blocks/conditions where all responses are incorrect or
+        # missing. The utility expects the condition column first followed by
+        # the accuracy column; previously these were reversed.
+        problematic_conditions = QC_UTILS.cond_block_not_reported(
+            raw,
+            self.COND_COLUMN_NAME,
+            self.ACC_COLUMN_NAME,
+            self.INCORRECT_SYMBOL,
+        )
 
         if len(problematic_conditions) != 0:
             CATEGORY = 3

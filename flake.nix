@@ -57,6 +57,8 @@
               ps.scipy
               ps.pyyaml
               ps.pyarrow
+              ps.termcolor
+              ps.fuzzywuzzy
             ] ++ [ catppuccin-jupyterlab ]
           );
         in {

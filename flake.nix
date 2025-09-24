@@ -67,6 +67,7 @@
             packages = [
               pythonEnv
               pkgs.git
+              pkgs.nodejs
             ];
 
             postShellHook = ''

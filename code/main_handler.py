@@ -326,6 +326,53 @@ class Handler:
                 ignore_index=True,
             )
 
+        # Append richer MEM metrics (count, RT, accuracy) to mem_master
+        mem_rows = []
+        count_by = {}
+        rt_by = {}
+        for subject, _, df in categories:
+            if 'session' in df.columns:
+                session = df['session'].iloc[0]
+            elif 'session_number' in df.columns:
+                session = df['session_number'].iloc[0]
+            else:
+                session = None
+
+            # reuse cond column and symbol config
+            count_by = qc_util.get_count_correct(
+                df,
+                block_cond_column_name=cond_col,
+                acc_column_name='correct',
+                correct_symbol=1,
+            )
+            acc_by = qc_util.get_acc_by_block_cond(
+                df,
+                block_cond_column_name=cond_col,
+                acc_column_name='correct',
+                correct_symbol=1,
+                incorrect_symbol=0,
+            )
+            rt_by = qc_util.get_avg_rt(
+                df,
+                rt_column_name='response_time',
+                conditon_column_name=cond_col,
+            )
+
+            all_conditions = sorted(set(count_by.keys()) | set(acc_by.keys()) | set(rt_by.keys()), key=lambda x: str(x))
+            for cond in all_conditions:
+                mem_rows.append({
+                    'task': task,
+                    'subject_id': subject,
+                    'session': session,
+                    'condition': cond,
+                    'count_correct': int(count_by.get(cond, 0)),
+                    'mean_rt': float(rt_by.get(cond, float('nan'))),
+                    'accuracy': float(acc_by.get(cond, 0.0)),
+                })
+
+        if mem_rows:
+            self.mem_master = pd.concat([self.mem_master, pd.DataFrame(mem_rows)], ignore_index=True)
+
 
         self._persist_all_masters()  # save after each task for safety
 

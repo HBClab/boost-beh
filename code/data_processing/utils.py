@@ -21,7 +21,6 @@ class CONVERT_TO_CSV:
             tweets = []
 
             for line in lines:
-                print(line)
                 if line.strip():
                     try:
                         tweets.append(json.loads(line))
@@ -43,6 +42,28 @@ class CONVERT_TO_CSV:
 
 class QC_UTILS:
 
+    @staticmethod
+    def get_avg_rt(df, rt_column_name, conditon_column_name):
+        """
+        Helper function to calculate the average response time (RT) from for each condition for a dataframe.
+        Args:
+            df (pd.DataFrame): The DataFrame containing the trial data.
+            rt_column_name (str): The column name for response times.
+            conditon_column_name (str): The column name for conditions.
+        Returns:
+            dict: A dictionary where keys are unique conditions and values are average RTs for those conditions.
+        """
+
+        if rt_column_name not in df.columns:
+            raise ValueError(f"Column '{rt_column_name}' does not exist in the DataFrame.")
+        if conditon_column_name not in df.columns:
+            raise ValueError(f"Column '{conditon_column_name}' does not exist in the DataFrame.")
+        avg_rt_by_condition = {}
+        for condition in df[conditon_column_name].unique():
+            condition_data = df[df[conditon_column_name] == condition]
+            avg_rt = condition_data[rt_column_name].mean()
+            avg_rt_by_condition[condition] = avg_rt
+        return avg_rt_by_condition
 
     @staticmethod
     def get_max_rt_info(df, max_rt, rt_column_name):
@@ -90,7 +111,30 @@ class QC_UTILS:
         return num_trials_reaching_max_rt, max_consecutive, consecutive_ranges
 
     @staticmethod
-    def get_acc_by_block_cond(df, block_cond_column_name, acc_column_name, correct_symbol, incorrect_symbol):
+    def get_count_correct(df, block_cond_column_name, acc_column_name, correct_symbol): 
+        """
+        Calculate the count of correct responses by block or condition based on a given column.
+        Args:
+            df (pd.DataFrame): The DataFrame containing the data.
+            block_cond_column_name (str): The name of the column to group data by (e.g., blocks or conditions).
+            acc_column_name (str): The name of the column containing the accuracy symbols.
+            correct_symbol (str): The symbol representing correct responses.
+        """
+        if acc_column_name not in df.columns:
+            raise ValueError(f"column '{acc_column_name}' does not exist in the dataframe.")
+        if block_cond_column_name not in df.columns:
+            raise ValueError(f"column '{block_cond_column_name}' does not exist in the dataframe.")
+        correct_count_by_block_cond = {}
+        for block_cond in df[block_cond_column_name].unique():
+            block_data = df[df[block_cond_column_name] == block_cond]
+            # count correct responses
+            correct_count = (block_data[acc_column_name] == correct_symbol).sum()
+            correct_count_by_block_cond[block_cond] = correct_count
+        return correct_count_by_block_cond
+
+
+    @staticmethod
+    def get_acc_by_block_cond(df, block_cond_column_name, acc_column_name, correct_symbol, incorrect_symbol, domain=None):
         """
         Calculate the accuracy by block or condition based on a given column.
 
@@ -125,6 +169,7 @@ class QC_UTILS:
             else:
                 # Calculate accuracy as a percentage
                 accuracy_by_block_cond[block_cond] = (correct_count / total_responses) * 100
+
 
         return accuracy_by_block_cond
 
@@ -293,10 +338,11 @@ class WL_UTILS:
         ranges = [[start, end] for start, end in zip(indices[:-1], indices[1:])]
         return ranges
 
+    # 1) add block extraction to add_metadata
     @staticmethod
     def add_metadata(data, ranges):
         """
-        Add metadata (multichar_response, backspace flag, time difference) to ranges.
+        Add metadata (multichar_response, backspace flag, time difference, block_c) to ranges.
         """
         updated_ranges = []
         for r in ranges:
@@ -304,9 +350,13 @@ class WL_UTILS:
             response_text = data.iloc[end]['multichar_response'][:-5]
             backspace_flag = 1 if any('backspace' in data.iloc[j]['response'] for j in range(start, end)) else 0
             time_diff = data.iloc[end]['block_dur'] - data.iloc[start]['block_dur']
-            updated_ranges.append([response_text, start, end, backspace_flag, time_diff])
+            # derive the learn block from block_c within the range (mode is robust)
+            blk_series = data.loc[start:end, 'block_c'].dropna()
+            block_num = int(blk_series.mode().iat[0]) if not blk_series.empty else int(data.iloc[end]['block_c'])
+            updated_ranges.append([response_text, start, end, backspace_flag, time_diff, block_num])
         return updated_ranges
 
+    # 2) pass block through fuzzy_match
     @staticmethod
     def fuzzy_match(sub_list, word_list):
         """
@@ -322,10 +372,13 @@ class WL_UTILS:
                     matched_word, ratio = best_match
                     repeat_flag = '1' if matched_word in used else '0'
                     correct_flag = '1' if ratio > 80 else '0'
-                    used.append(matched_word) if ratio > 80 else None
-                    results.append([first_item, matched_word, ratio, sub[3], repeat_flag, correct_flag])
+                    if ratio > 80:
+                        used.append(matched_word)
+                    # sub[5] is block_num from add_metadata
+                    results.append([first_item, matched_word, ratio, sub[3], repeat_flag, correct_flag, sub[5]])
         return results
 
+    # 3) expose 'block' from create_dataframe
     def create_dataframe(self, data, key, condition):
         """
         Create a DataFrame for the fuzzy matching results.
@@ -334,13 +387,17 @@ class WL_UTILS:
         word_ranges = self.add_metadata(data, word_ranges)
         word_list = key[0] if condition in ['immediate', 'learn'] else key[1]
         fuzzy_results = self.fuzzy_match(word_ranges, word_list)
-        return pd.DataFrame(fuzzy_results, columns=['word', 'best_match', 'ratio', 'backspace', 'repeat', 'correct'])
+        # include 'block' as last column (learn block number)
+        df = pd.DataFrame(
+            fuzzy_results,
+            columns=['word', 'best_match', 'ratio', 'backspace', 'repeat', 'correct', 'block']
+        )
+        return df
 
+    # 4) in main(): preserve learn block number, and add a separate 'condition' column
     def main(self, df, version):
         key = self.select_key(version)
-        filtered_data = self.filter_data(df)
-        # Reset index so positional indexing won't break
-        filtered_data = filtered_data.reset_index(drop=True)
+        filtered_data = self.filter_data(df).reset_index(drop=True)
 
         dist = filtered_data[filtered_data['condition'] == 'distr'].reset_index(drop=True)
         immed = filtered_data[filtered_data['condition'] == 'immed'].reset_index(drop=True)
@@ -351,11 +408,16 @@ class WL_UTILS:
 
         df_dist = self.create_dataframe(dist, key, 'distraction')
         df_immed = self.create_dataframe(immed, key, 'immediate')
-        df_learn = self.create_dataframe(learn, key, 'learn')
+        df_learn = self.create_dataframe(learn, key, 'learn')  # 'block' here is the learn block number 1..5
 
+        # For non-learn, override 'block' to the label; keep numeric blocks for learn
         df_dist['block'] = 'distraction'
         df_immed['block'] = 'immediate'
-        df_learn['block'] = 'learn'
+
+        # Add explicit condition column so both things are available downstream
+        df_dist['condition']  = 'distraction'
+        df_immed['condition'] = 'immediate'
+        df_learn['condition'] = 'learn'
 
         df_all = pd.concat([df_dist, df_immed, df_learn], ignore_index=True)
         df_all['trial_index'] = df_all.index

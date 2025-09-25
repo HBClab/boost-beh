@@ -21,7 +21,6 @@ class CONVERT_TO_CSV:
             tweets = []
 
             for line in lines:
-                print(line)
                 if line.strip():
                     try:
                         tweets.append(json.loads(line))
@@ -112,7 +111,7 @@ class QC_UTILS:
         return num_trials_reaching_max_rt, max_consecutive, consecutive_ranges
 
     @staticmethod
-    def get_count_correct(df, block_cond_column_name, acc_column_name, correct_symbol):
+    def get_count_correct(df, block_cond_column_name, acc_column_name, correct_symbol): 
         """
         Calculate the count of correct responses by block or condition based on a given column.
         Args:

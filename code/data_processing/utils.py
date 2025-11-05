@@ -11,30 +11,76 @@ class CONVERT_TO_CSV:
         self.task = task
 
     def convert_to_csv(self, txt_dfs):
-        import json
-        import pandas as pd
         new_dfs = []
 
         for txt_df in txt_dfs:
             file_content = txt_df["file_content"].values[0]
-            lines = file_content.splitlines()
-            tweets = []
+            records = self._extract_records(file_content)
 
-            for line in lines:
-                if line.strip():
-                    try:
-                        tweets.append(json.loads(line))
-                    except json.JSONDecodeError as e:
-                        cprint(f"JSONDecodeError: {e} on line: {line}", 'red')
-
-            if not tweets:
-                # If file is empty or has no valid lines, skip
+            if not records:
+                # If file is empty or has no valid records, skip
                 continue
 
-            flattened_df = pd.json_normalize(tweets, "data")
+            # Normalize nested dicts into flat columns so downstream QC stays unchanged
+            flattened_df = pd.json_normalize(records)
             new_dfs.append(flattened_df)
 
         return new_dfs
+
+    def _extract_records(self, file_content):
+        """
+        Normalize different JSON payload shapes (newline-delimited objects vs array dumps)
+        into a consistent list of trial dictionaries.
+        """
+        try:
+            parsed_payload = json.loads(file_content)
+        except json.JSONDecodeError:
+            return self._extract_from_lines(file_content)
+
+        return self._collect_records(parsed_payload)
+
+    def _extract_from_lines(self, file_content):
+        records = []
+        for raw_line in file_content.splitlines():
+            line = raw_line.strip()
+            if not line or line in ("[", "]"):
+                continue
+
+            if line.startswith('['):
+                line = line[1:]
+            if line.endswith(']'):
+                line = line[:-1]
+
+            trimmed_line = line.rstrip(',').strip()
+            if not trimmed_line:
+                continue
+
+            try:
+                parsed_line = json.loads(trimmed_line)
+            except json.JSONDecodeError as e:
+                cprint(f"JSONDecodeError: {e} on line: {raw_line}", 'red')
+                continue
+
+            records.extend(self._collect_records(parsed_line))
+
+        return records
+
+    def _collect_records(self, payload):
+        if isinstance(payload, dict):
+            data_block = payload.get("data")
+            if isinstance(data_block, list):
+                return data_block
+            if isinstance(data_block, dict):
+                return [data_block]
+            return [payload]
+
+        if isinstance(payload, list):
+            records = []
+            for item in payload:
+                records.extend(self._collect_records(item))
+            return records
+
+        return []
 
     def save_csv(self):
         return None

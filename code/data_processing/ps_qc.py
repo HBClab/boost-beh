@@ -90,7 +90,14 @@ class PS_QC:
             CATEGORY = 2
             print(f"FOR DSST -> Average accuracy at or below 0.5 across conditions and CATEGORY set to 2")
 
-        problematic_conditions = QC_UTILS.cond_block_not_reported(raw, self.ACC_COLUMN_NAME, self.COND_COLUMN_NAME, self.INCORRECT_SYMBOL)
+        # Identify blocks/conditions with only incorrect or missing responses.
+        # Arguments were previously inverted, leading to incorrect detection.
+        problematic_conditions = QC_UTILS.cond_block_not_reported(
+            raw,
+            self.COND_COLUMN_NAME,
+            self.ACC_COLUMN_NAME,
+            self.INCORRECT_SYMBOL,
+        )
 
         if len(problematic_conditions) != 0:
             CATEGORY = 3

@@ -23,7 +23,7 @@ class WL_QC:
 
         if self.CATEGORY == 3:
             print("One or more conditions are empty, status finalized at 3")
-            return self.CATEGORY
+            return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 
         if (df_all['block'] == 'immediate').any():
@@ -48,7 +48,7 @@ class WL_QC:
 
         if self.CATEGORY == 3:
             print("One or more conditions are empty, status finalized at 3")
-            return self.CATEGORY
+            return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 
         if (df_all['block'] == 'delay').any():
@@ -90,4 +90,3 @@ class WL_QC:
                .reindex(['delay'], fill_value=0)
                .to_frame().T)  # one row: column 'delay'
         return out
-

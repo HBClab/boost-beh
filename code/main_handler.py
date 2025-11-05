@@ -10,6 +10,7 @@ from data_processing.save_utils import SAVE_EVERYTHING
 import pandas as pd
 from pathlib import Path
 import os, atexit
+from termcolor import cprint
 
 
 class Handler:
@@ -44,6 +45,7 @@ class Handler:
 
         # autosave on normal process exit
         atexit.register(self._persist_all_masters)
+        self._skipped_subjects: list[dict[str, object]] = []
 
     def _atomic_to_csv(self, df: pd.DataFrame, path: Path, index: bool = False):
         """Write CSV atomically to avoid partial files."""
@@ -67,6 +69,14 @@ class Handler:
         if isinstance(wl_flat.index, pd.MultiIndex):
             wl_flat = wl_flat.reset_index()
         self._atomic_to_csv(wl_flat, self.meta_dir / "wl_master.csv", index=False)
+
+        if self._skipped_subjects:
+            formatted = ", ".join(
+                f"{entry['subject_id']} (task={entry['task']}, session={entry['session'] if entry['session'] is not None else '<unknown>'}, reason={entry['reason']})"
+                for entry in self._skipped_subjects
+            )
+            cprint(f"Skipped subjects: {formatted}", "red")
+            self._skipped_subjects.clear()
 
     def pull(self, task):
         pull_instance = Pull(
@@ -127,16 +137,34 @@ class Handler:
             else:
                 session = None
 
-            # --- Run QC + plots (kept as you had it) ---
-            if task in ["AF", "NF"]:
-                category, _ = qc_instance.cc_qc(df, threshold=0.5)
-                plot = plot_instance.af_nf_plot(df)
-            elif task in ["NNB", "VNB"]:
-                category, _ = qc_instance.cc_qc(df, threshold=0.5)
-                plot = plot_instance.nnb_vnb_plot(df)
-            else:
-                category = qc_instance.cc_qc(df, threshold=0.5, TS=True)
-                plot = plot_instance.ats_nts_plot(df)
+            try:
+                # --- Run QC + plots (kept as you had it) ---
+                if task in ["AF", "NF"]:
+                    category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                    plot = plot_instance.af_nf_plot(df)
+                elif task in ["NNB", "VNB"]:
+                    category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                    plot = plot_instance.nnb_vnb_plot(df)
+                else:
+                    category = qc_instance.cc_qc(df, threshold=0.5, TS=True)
+                    plot = plot_instance.ats_nts_plot(df)
+            except ValueError as err:
+                message = str(err)
+                if "No 'test' block rows available for plotting" in message:
+                    cprint(
+                        f"Skipping subject {subject} for task {task}: {message}",
+                        "yellow",
+                    )
+                    self._skipped_subjects.append(
+                        {
+                            "task": task,
+                            "subject_id": subject,
+                            "session": session,
+                            "reason": message,
+                        }
+                    )
+                    continue
+                raise
 
             categories.append([subject, category, df])
             plots.append([subject, plot])
@@ -279,17 +307,85 @@ class Handler:
         if task in ['FN']:
             mem_instance = MEM_QC('response_time', 'correct', 1, 0, 'block_c', 4000)
             for df in dfs:
-                subject = df['subject_id'][1]
-                category = mem_instance.fn_sm_qc(df, threshold=0.5)
-                plot = plot_instance.fn_plot(df)
+                subject_series = df.get('subject_id')
+                subject = (
+                    subject_series.iloc[1]
+                    if subject_series is not None and len(subject_series) > 1
+                    else (subject_series.iloc[0] if subject_series is not None and not subject_series.empty else "<unknown>")
+                )
+                if 'session_number' in df.columns and len(df['session_number']) > 1:
+                    session = df['session_number'].iloc[1]
+                elif 'session' in df.columns and len(df['session']) > 1:
+                    session = df['session'].iloc[1]
+                elif 'session_number' in df.columns and not df['session_number'].empty:
+                    session = df['session_number'].iloc[0]
+                elif 'session' in df.columns and not df['session'].empty:
+                    session = df['session'].iloc[0]
+                else:
+                    session = None
+
+                try:
+                    category = mem_instance.fn_sm_qc(df, threshold=0.5)
+                    plot = plot_instance.fn_plot(df)
+                except ValueError as err:
+                    message = str(err)
+                    if "No 'test' block rows available for MEM plotting" in message:
+                        cprint(
+                            f"Skipping subject {subject} for task {task}: {message}",
+                            "yellow",
+                        )
+                        self._skipped_subjects.append(
+                            {
+                                "task": task,
+                                "subject_id": subject,
+                                "session": session,
+                                "reason": message,
+                            }
+                        )
+                        continue
+                    raise
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
         elif task in ['SM']:
             mem_instance = MEM_QC('response_time', 'correct', 1, 0, 'block_c', 2000)
             for df in dfs:
-                subject = df['subject_id'][1]
-                category = mem_instance.fn_sm_qc(df, threshold=0.5)
-                plot = plot_instance.sm_plot(df)
+                subject_series = df.get('subject_id')
+                subject = (
+                    subject_series.iloc[1]
+                    if subject_series is not None and len(subject_series) > 1
+                    else (subject_series.iloc[0] if subject_series is not None and not subject_series.empty else "<unknown>")
+                )
+                if 'session_number' in df.columns and len(df['session_number']) > 1:
+                    session = df['session_number'].iloc[1]
+                elif 'session' in df.columns and len(df['session']) > 1:
+                    session = df['session'].iloc[1]
+                elif 'session_number' in df.columns and not df['session_number'].empty:
+                    session = df['session_number'].iloc[0]
+                elif 'session' in df.columns and not df['session'].empty:
+                    session = df['session'].iloc[0]
+                else:
+                    session = None
+
+                try:
+                    category = mem_instance.fn_sm_qc(df, threshold=0.5)
+                    plot = plot_instance.sm_plot(df)
+                except ValueError as err:
+                    message = str(err)
+                    if "No 'test' block rows available for MEM plotting" in message:
+                        cprint(
+                            f"Skipping subject {subject} for task {task}: {message}",
+                            "yellow",
+                        )
+                        self._skipped_subjects.append(
+                            {
+                                "task": task,
+                                "subject_id": subject,
+                                "session": session,
+                                "reason": message,
+                            }
+                        )
+                        continue
+                    raise
                 categories.append([subject, category, df])
                 plots.append([subject, plot])
         save_instance = SAVE_EVERYTHING()

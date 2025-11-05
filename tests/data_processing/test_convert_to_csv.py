@@ -1,9 +1,46 @@
+import importlib.util
 import json
+import sys
+import sysconfig
+import types
+from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import pandas as pd
 import pytest
 
+
+def _prepare_code_namespace() -> None:
+    """
+    Make sure the project package ``code`` wins import resolution without
+    breaking libraries (pytest) that rely on the stdlib module of the same name.
+    """
+    stdlib_key = "code._stdlib_bootstrap"
+
+    if stdlib_key not in sys.modules:
+        stdlib_path = sysconfig.get_path("stdlib")
+        if stdlib_path:
+            candidate = Path(stdlib_path) / "code.py"
+            if candidate.exists():
+                spec = importlib.util.spec_from_file_location(stdlib_key, candidate)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    sys.modules[stdlib_key] = module
+
+    project_root = Path(__file__).resolve().parents[2]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+
+_prepare_code_namespace()
+
+try:
+    import code.functions  # noqa: F401,E402
+except ModuleNotFoundError:
+    # Some developer environments may not ship the optional helpers yet; provide a stub.
+    sys.modules.setdefault("code.functions", types.ModuleType("code.functions"))
+    import code.functions  # noqa: F401,E402
 from code.main_handler import Handler
 from code.data_processing.pull_handler import Pull
 from code.data_processing.utils import CONVERT_TO_CSV
@@ -42,6 +79,20 @@ def _payload_templates() -> List[Callable[[Dict[str, object]], str]]:
                 json.dumps({"data": {**rec, "trial_index": 5}}),
                 "]",
             ]
+        ),
+        # CamelCase wrappers with inconsistent key names.
+        lambda rec: json.dumps(
+            {
+                "TrialData": {
+                    "BlockName": "Test ",
+                    "Condition": rec["condition"],
+                    "Correct": 1,
+                    "Session": rec["session"],
+                    "Subject": rec["subject_id"],
+                    "Extra": {"Correct": 0, "Block_Type": "Practice"},
+                },
+                "response": {"latency": 350},
+            }
         ),
     ]
 

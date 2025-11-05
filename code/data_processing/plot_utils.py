@@ -27,7 +27,25 @@ class CC_PLOTS:
             tuple: A tuple containing two Axes objects (count_plot, response_time_plot).
         """
         # Filter to drop practice data
-        test = df[df['block'] == 'test'].copy()
+        block_series = df['block'].astype(str).str.strip().str.lower()
+        test_mask = block_series == 'test'
+        test = df[test_mask].copy()
+
+        if test.empty:
+            subject_series = df.get('subject_id')
+            if subject_series is not None:
+                subjects = sorted(
+                    {str(value).strip() for value in subject_series.dropna() if str(value).strip()}
+                )
+            else:
+                subjects = []
+
+            unique_blocks = sorted({value for value in block_series.unique() if value and value != 'nan'})
+            raise ValueError(
+                "No 'test' block rows available for plotting. "
+                f"Observed block labels: {unique_blocks or '<none>'}. "
+                f"Subjects in frame: {subjects or '<unknown>'}"
+            )
 
         # Generate count plot
         plt.figure(figsize=(10, 6))
@@ -402,7 +420,27 @@ class MEM_PLOTS:
         Returns:
             tuple: The scatter/box plot and bar chart plot objects.
         """
-        test = df[df['block'] == 'test']
+        block_series = df['block'].astype(str).str.strip().str.lower()
+        test_mask = block_series == 'test'
+        test = df[test_mask].copy()
+
+        if test.empty:
+            subject_series = df.get('subject_id')
+            if subject_series is not None:
+                subjects = sorted(
+                    {str(value).strip() for value in subject_series.dropna() if str(value).strip()}
+                )
+            else:
+                subjects = []
+
+            unique_blocks = sorted({value for value in block_series.unique() if value and value != 'nan'})
+            raise ValueError(
+                "No 'test' block rows available for MEM plotting. "
+                f"Observed block labels: {unique_blocks or '<none>'}. "
+                f"Subjects in frame: {subjects or '<unknown>'}"
+            )
+
+        test['block'] = test['block'].astype(str).str.strip()
         test['correct_label'] = test['correct'].map({0: 'Incorrect', 1: 'Correct'})
 
         # Scatter and box plot
@@ -459,7 +497,27 @@ class MEM_PLOTS:
         Returns:
             The scatter and box plot object.
         """
-        test = df[df['block'] == 'test']
+        block_series = df['block'].astype(str).str.strip().str.lower()
+        test_mask = block_series == 'test'
+        test = df[test_mask].copy()
+
+        if test.empty:
+            subject_series = df.get('subject_id')
+            if subject_series is not None:
+                subjects = sorted(
+                    {str(value).strip() for value in subject_series.dropna() if str(value).strip()}
+                )
+            else:
+                subjects = []
+
+            unique_blocks = sorted({value for value in block_series.unique() if value and value != 'nan'})
+            raise ValueError(
+                "No 'test' block rows available for MEM plotting. "
+                f"Observed block labels: {unique_blocks or '<none>'}. "
+                f"Subjects in frame: {subjects or '<unknown>'}"
+            )
+
+        test['block'] = test['block'].astype(str).str.strip()
         mapping = {'no': 'Incongruent', 'yes': 'Congruent'}
         test['target_congruent'] = test['target_congruent'].map(mapping)
         test['correct_label'] = test['correct'].map({0: 'Incorrect', 1: 'Correct'})
@@ -545,9 +603,6 @@ class MEM_PLOTS:
         plt.tight_layout()
 
         return dwl_ax
-
-
-
 
 
 

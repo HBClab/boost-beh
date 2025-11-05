@@ -21,8 +21,15 @@ class CONVERT_TO_CSV:
                 # If file is empty or has no valid records, skip
                 continue
 
-            # Normalize nested dicts into flat columns so downstream QC stays unchanged
-            flattened_df = pd.json_normalize(records)
+            normalized_records = [
+                self._flatten_record(record) for record in records if isinstance(record, dict)
+            ]
+            if not normalized_records:
+                continue
+
+            flattened_df = pd.json_normalize(normalized_records, sep="_")
+            flattened_df = self._harmonize_columns(flattened_df)
+            flattened_df = self._normalize_semantics(flattened_df)
             new_dfs.append(flattened_df)
 
         return new_dfs
@@ -81,6 +88,117 @@ class CONVERT_TO_CSV:
             return records
 
         return []
+
+    def _flatten_record(self, record):
+        """
+        Recursively merge wrapper keys (``data``, ``trialdata``) into a flat dict so
+        downstream QC modules see consistent column names like ``block`` and ``correct``.
+        """
+        flattened = {}
+        for key, value in record.items():
+            if isinstance(value, dict) and key.lower() in {"data", "trialdata"}:
+                flattened.update(self._flatten_record(value))
+            elif isinstance(value, dict):
+                nested = self._flatten_record(value)
+                for nested_key, nested_value in nested.items():
+                    combined_key = f"{key}_{nested_key}"
+                    flattened[combined_key] = nested_value
+            else:
+                flattened[key] = value
+        return flattened
+
+    def _harmonize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Strip known wrapper prefixes to restore historical column names and drop duplicates.
+        """
+        rename_map = {}
+        for col in df.columns:
+            new_col = col
+            for prefix in ("trialdata_", "data_", "payload_", "TrialData_", "trialData_"):
+                if new_col.startswith(prefix):
+                    new_col = new_col[len(prefix):]
+            rename_map[col] = new_col
+
+        harmonized = df.rename(columns=rename_map)
+
+        canonical_map = {
+            "Block": "block",
+            "BlockName": "block",
+            "blockName": "block",
+            "Block_Type": "block",
+            "block_type": "block",
+            "Condition": "condition",
+            "Cond": "condition",
+            "stim_condition": "condition",
+            "Correct": "correct",
+            "isCorrect": "correct",
+            "Session": "session_number",
+            "session": "session_number",
+            "SessionID": "session_number",
+            "Subject": "subject_id",
+            "subject": "subject_id",
+        }
+
+        harmonized = harmonized.rename(columns=lambda col: canonical_map.get(col, col))
+
+        # If both original and harmonized columns exist, keep the first non-null values.
+        if harmonized.columns.duplicated().any():
+            deduped = {}
+            for col in harmonized.columns.unique():
+                dupes = [c for c in harmonized.columns if c == col]
+                if len(dupes) == 1:
+                    deduped[col] = harmonized[dupes[0]]
+                else:
+                    stacked = harmonized[dupes].bfill(axis=1)
+                    deduped[col] = stacked.iloc[:, 0]
+            harmonized = pd.DataFrame(deduped)
+
+        return harmonized
+
+    def _normalize_semantics(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Coerce critical columns (block/condition/correct/session/subject_id) into their
+        historical dtypes and label space so downstream QC and persistence stay stable.
+        """
+        normalized = df.copy()
+
+        if "block" in normalized.columns:
+            normalized["block"] = normalized["block"].map(self._standardize_block)
+
+        if "condition" in normalized.columns:
+            normalized["condition"] = normalized["condition"].apply(
+                lambda val: val.strip() if isinstance(val, str) else val
+            )
+
+        if "correct" in normalized.columns:
+            normalized["correct"] = pd.to_numeric(normalized["correct"], errors="coerce")
+
+        if "session_number" in normalized.columns:
+            normalized["session_number"] = pd.to_numeric(
+                normalized["session_number"], errors="coerce"
+            )
+
+        if "subject_id" in normalized.columns:
+            normalized["subject_id"] = normalized["subject_id"].apply(
+                lambda val: str(val).strip() if pd.notna(val) else val
+            )
+
+        return normalized
+
+    @staticmethod
+    def _standardize_block(value):
+        if isinstance(value, str):
+            cleaned = value.strip().lower()
+            if cleaned.startswith("test"):
+                return "test"
+            if cleaned.startswith(("prac", "practice")):
+                return "prac"
+            if cleaned in {"training", "train"}:
+                return "prac"
+            if cleaned == "":
+                return np.nan
+            return cleaned
+        return value
 
     def save_csv(self):
         return None

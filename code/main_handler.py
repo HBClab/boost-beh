@@ -47,6 +47,21 @@ class Handler:
         atexit.register(self._persist_all_masters)
         self._skipped_subjects: list[dict[str, object]] = []
 
+    @staticmethod
+    def _normalize_category_value(category):
+        """Coerce QC categories to plain scalars so filenames remain clean."""
+        if category is None:
+            return None
+        if hasattr(category, "item"):
+            try:
+                category = category.item()
+            except Exception:
+                pass
+        try:
+            return int(category)
+        except (TypeError, ValueError):
+            return category
+
     def _atomic_to_csv(self, df: pd.DataFrame, path: Path, index: bool = False):
         """Write CSV atomically to avoid partial files."""
         tmp = path.with_suffix(path.suffix + ".tmp")
@@ -137,16 +152,17 @@ class Handler:
             else:
                 session = None
 
+            acc_by: dict = {}
             try:
                 # --- Run QC + plots (kept as you had it) ---
                 if task in ["AF", "NF"]:
-                    category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                    category, acc_by = qc_instance.cc_qc(df, threshold=0.5)
                     plot = plot_instance.af_nf_plot(df)
                 elif task in ["NNB", "VNB"]:
-                    category, _ = qc_instance.cc_qc(df, threshold=0.5)
+                    category, acc_by = qc_instance.cc_qc(df, threshold=0.5)
                     plot = plot_instance.nnb_vnb_plot(df)
                 else:
-                    category = qc_instance.cc_qc(df, threshold=0.5, TS=True)
+                    category, acc_by = qc_instance.cc_qc(df, threshold=0.5, TS=True)
                     plot = plot_instance.ats_nts_plot(df)
             except ValueError as err:
                 message = str(err)
@@ -166,18 +182,13 @@ class Handler:
                     continue
                 raise
 
-            categories.append([subject, category, df])
+            normalized_category = self._normalize_category_value(category)
+            categories.append([subject, normalized_category, df])
             plots.append([subject, plot])
 
-            # --- Compute metrics by condition using your helpers ---
-            # Use the column names from qc_instance so this is task-agnostic
-            acc_by = utils.get_acc_by_block_cond(
-                df,
-                block_cond_column_name=qc_instance.COND_COLUMN_NAME,
-                acc_column_name=qc_instance.ACC_COLUMN_NAME,
-                correct_symbol=qc_instance.CORRECT_SYMBOL,
-                incorrect_symbol=qc_instance.INCORRECT_SYMBOL,
-            )
+            # --- Metrics by condition ---
+            # Reuse QC accuracies and recompute RTs for the master tables.
+            acc_by = {cond: float(val) for cond, val in (acc_by or {}).items()}
             rt_by = utils.get_avg_rt(
                 df,
                 rt_column_name=qc_instance.RT_COLUMN_NAME,
@@ -220,21 +231,23 @@ class Handler:
             ps_instance = PS_QC('response_time', 'correct', 1, 0, 'block_c', 30000)
             for df in dfs:
                 subject = df['subject_id'][1]
-                category = ps_instance.ps_qc(df, threshold=0.6,)
+                category, _ = ps_instance.ps_qc(df, threshold=0.6,)
                 if task == 'PC':
                     plot = plot_instance.lc_plot(df)
                 elif task == 'LC':
                     plot = plot_instance.lc_plot(df)
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
 
         else:
             ps_instance = PS_QC('block_dur', 'correct', 1, 0, 'block_c', 125)
             for df in dfs:
                 subject = df['subject_id'][1]
-                category = ps_instance.ps_qc(df, threshold=0.6, DSST=True)
+                category, _ = ps_instance.ps_qc(df, threshold=0.6, DSST=True)
                 plot = plot_instance.dsst_plot(df)
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
 
         save_instance = SAVE_EVERYTHING()
@@ -325,7 +338,7 @@ class Handler:
                     session = None
 
                 try:
-                    category = mem_instance.fn_sm_qc(df, threshold=0.5)
+                    category, _ = mem_instance.fn_sm_qc(df, threshold=0.5)
                     plot = plot_instance.fn_plot(df)
                 except ValueError as err:
                     message = str(err)
@@ -344,7 +357,8 @@ class Handler:
                         )
                         continue
                     raise
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
         elif task in ['SM']:
             mem_instance = MEM_QC('response_time', 'correct', 1, 0, 'block_c', 2000)
@@ -367,7 +381,7 @@ class Handler:
                     session = None
 
                 try:
-                    category = mem_instance.fn_sm_qc(df, threshold=0.5)
+                    category, _ = mem_instance.fn_sm_qc(df, threshold=0.5)
                     plot = plot_instance.sm_plot(df)
                 except ValueError as err:
                     message = str(err)
@@ -386,7 +400,8 @@ class Handler:
                         )
                         continue
                     raise
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
         save_instance = SAVE_EVERYTHING()
         save_instance.save_dfs(categories=categories, task=task)
@@ -503,7 +518,8 @@ class Handler:
                 }
                 self._upsert_wl_master(subject, session, upd)
 
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
 
         elif task == 'DWL':
@@ -521,7 +537,8 @@ class Handler:
                 upd = {'delay': counts_delay['delay'].iat[0]}
                 self._upsert_wl_master(subject, session, upd)
 
-                categories.append([subject, category, df])
+                normalized_category = self._normalize_category_value(category)
+                categories.append([subject, normalized_category, df])
                 plots.append([subject, plot])
 
         # maybe: materialize wl_master back to columns if you prefer

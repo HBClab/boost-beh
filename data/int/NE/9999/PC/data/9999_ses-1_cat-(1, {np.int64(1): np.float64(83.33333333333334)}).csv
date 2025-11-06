@@ -1,0 +1,7 @@
+acc_sum,block_c,block_dur,condition,correct,correct_response,countdown,datetime,endtime,project,response,response_time,response_time_test1_response,response_time_test2_response,row_sel,same,session_number,start_end,starttime,stim1,stim2,subject_id,task,task_vers,time_test1,time_test2,trial
+1,1,0,prac,1,z,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),77486.10000014305,O,z,971,,,5,yes,1,2495.7999999523163,74990.30000019073,practrial5.png,practrial5.png,9999,PC,A,,,1
+2,1,0,prac,1,m,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),79652.0,O,m,630,,,2,no,1,2160.7999999523163,77491.20000004768,practrial2.png,practrial2b.png,9999,PC,A,,,2
+3,1,0,prac,1,m,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),81884.70000004768,O,m,706,,,6,no,1,2229.2999999523163,79655.40000009537,practrial6.png,practrial6b.png,9999,PC,A,,,3
+4,1,0,prac,1,z,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),83950.30000019073,O,z,537,,,3,yes,1,2062.0,81888.30000019073,practrial3.png,practrial3.png,9999,PC,A,,,4
+5,1,0,prac,1,m,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),86483.0,O,m,998,,,4,no,1,2528.5999999046326,83954.40000009537,practrial4.png,practrial4b.png,9999,PC,A,,,5
+5,1,0,prac,0,z,30000,Wed Sep 17 2025 12:40:02 GMT-0500 (Central Daylight Time),88882.5,O,m,866,,,1,yes,1,2395.699999809265,86486.80000019073,practrial1.png,practrial1.png,9999,PC,A,,,6

@@ -1,3 +1,4 @@
+import warnings
 from data_processing.meta import META_RECREATE
 from data_processing.pull_handler import Pull
 from data_processing.cc_qc import CCqC
@@ -9,6 +10,8 @@ from data_processing.plot_utils import CC_PLOTS, MEM_PLOTS, PS_PLOTS
 from data_processing.save_utils import SAVE_EVERYTHING
 import atexit
 from termcolor import cprint
+
+warnings.filterwarnings("ignore")
 
 
 class Handler:
@@ -97,6 +100,7 @@ class Handler:
         return csv_dfs, result
 
 
+
     def choose_construct(self, csv_dfs, task):
 
         if task in ['NF', 'AF', 'NTS', 'ATS', 'NNB', 'VNB']:
@@ -108,7 +112,7 @@ class Handler:
         elif task in ['PC', 'LC', 'DSST']:
             return self.qc_ps_dfs(csv_dfs, task)
         else:
-            return print("ERROR: TASK NAME NOT VALID")
+            return None
 
     def qc_cc_dfs(self, dfs, task):
         categories, plots = [], []

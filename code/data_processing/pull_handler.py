@@ -122,23 +122,19 @@ class Pull:
             try:
                 response = requests.post(url, headers=headers, json=data, proxies=proxies)
                 response.raise_for_status()
-            except requests.RequestException as e:
-                print(f"Error during request: {e}")
+            except requests.RequestException:
                 return []
 
             if not zipfile.is_zipfile(BytesIO(response.content)):
-                print("The retrieved file is not a valid zip file.")
                 return []
         else:
             try:
                 response = requests.post(url, headers=headers, json=data) #proxies=proxies)
                 response.raise_for_status()
-            except requests.RequestException as e:
-                print(f"Error during request: {e}")
+            except requests.RequestException:
                 return []
 
             if not zipfile.is_zipfile(BytesIO(response.content)):
-                print("The retrieved file is not a valid zip file.")
                 return []
 
 
@@ -162,6 +158,5 @@ class Pull:
                             data_frames.append(df)
 
         return data_frames  # List of DataFrames
-
 
 

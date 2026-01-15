@@ -22,7 +22,6 @@ class WL_QC:
         df_all, self.CATEGORY = wl_instance.main(df, version)
 
         if self.CATEGORY == 3:
-            print("One or more conditions are empty, status finalized at 3")
             return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 
@@ -47,7 +46,6 @@ class WL_QC:
         df_all, self.CATEGORY = dwl_instance.main(df, version)
 
         if self.CATEGORY == 3:
-            print("One or more conditions are empty, status finalized at 3")
             return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 

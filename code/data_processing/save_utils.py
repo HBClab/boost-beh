@@ -11,9 +11,14 @@ class SAVE_EVERYTHING:
         self.sessions = {}  # Dictionary to track session numbers for each subjectID
 
     def _get_folder(self, subjID):
-        if 7000 <= int(subjID) < 8000:
+        try:
+            subj_int = int(subjID)
+        except (TypeError, ValueError):
+            # Default to NE intervention for malformed IDs (logged upstream)
+            return 'int', 'NE'
+        if 7000 <= subj_int < 8000:
             return 'obs', 'UI'
-        elif 8000 <= int(subjID) < 9000:
+        elif 8000 <= subj_int < 9000:
             return 'int', 'UI'
         else:
             return 'int', 'NE'

@@ -20,6 +20,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Restore DSMC script from dsmc branch
+        run: |
+          git fetch origin dsmc
+          git show origin/dsmc:dsmc.py > dsmc.py
+
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:

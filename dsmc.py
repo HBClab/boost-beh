@@ -39,6 +39,33 @@ DEFAULT_TASKS: Set[str] = {
 SESSION_PATTERN = re.compile(r"_ses-(?P<session>[^_]+)")
 
 
+def normalize_session_label(session: str) -> str:
+    """Strip common prefixes so labels are comparable (e.g., ses-1 -> 1)."""
+    session = session.strip()
+    return session[4:] if session.startswith("ses-") else session
+
+
+def load_offloaded_pairs(path: Path) -> Set[Tuple[str, str, str]]:
+    """
+    Read offloaded task records.
+
+    Returns a set of (task, subject, session) tuples using normalized session labels.
+    """
+    pairs: Set[Tuple[str, str, str]] = set()
+    if not path.exists():
+        return pairs
+
+    with path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            task = row.get("task", "").strip().upper()
+            subject = row.get("sub", "").strip()
+            session = normalize_session_label(row.get("session", ""))
+            if task and subject and session:
+                pairs.add((task, subject, session))
+    return pairs
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Count complete subjects per session and list missing tasks."
@@ -109,7 +136,10 @@ def collect_subject_sessions(subject_dir: Path) -> Dict[str, Set[str]]:
 
 
 def gather_dataset_stats(
-    dataset_root: Path, dataset_label: str, expected_tasks: Set[str]
+    dataset_root: Path,
+    dataset_label: str,
+    expected_tasks: Set[str],
+    offloaded_pairs: Set[Tuple[str, str, str]],
 ) -> Tuple[Dict[str, int], List[Tuple[str, str, str, str]], Set[str]]:
     """
     Compute completeness counts and missing task rows for one dataset.
@@ -128,6 +158,22 @@ def gather_dataset_stats(
         for session, tasks_present in session_tasks.items():
             sessions_seen.add(session)
             missing = expected_tasks - tasks_present
+
+            # Exempt VNB/NNB sessions that were run offline (recorded in offloaded.csv).
+            missing = {
+                task
+                for task in missing
+                if not (
+                    task.upper() in {"VNB", "NNB"}
+                    and (
+                        task.upper(),
+                        subject_dir.name,
+                        normalize_session_label(session),
+                    )
+                    in offloaded_pairs
+                )
+            }
+
             if not missing:
                 complete_counts[session] += 1
             else:
@@ -170,6 +216,10 @@ def main() -> None:
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    offloaded_pairs = load_offloaded_pairs(
+        Path(__file__).resolve().parent / "offloaded.csv"
+    )
+
     # If no explicit tasks were provided, include any additional tasks found on disk.
     if not args.tasks:
         expected_tasks = discover_tasks(data_root) or DEFAULT_TASKS
@@ -183,7 +233,7 @@ def main() -> None:
             continue
 
         counts, missing, sessions_seen = gather_dataset_stats(
-            dataset_path, dataset_label, expected_tasks
+            dataset_path, dataset_label, expected_tasks, offloaded_pairs
         )
 
         for session in sorted(sessions_seen, key=session_sort_key):

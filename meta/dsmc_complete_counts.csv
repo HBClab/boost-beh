@@ -2,5 +2,4 @@ dataset,session,complete_subjects
 int,ses-1,68
 int,ses-2,46
 int,ses-3,24
-int,ses-33,0
 obs,ses-1,214

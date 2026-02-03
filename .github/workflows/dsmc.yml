@@ -42,7 +42,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
+          git pull --rebase --autostash origin main
           git add meta/dsmc_complete_counts.csv meta/dsmc_missing_tasks.csv
           git commit -m "Update DSMC completeness reports" || echo "No changes to commit"
           git push origin main

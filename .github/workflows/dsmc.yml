@@ -20,7 +20,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Restore DSMC script from dsmc branch
+      - name: Restore DSMC script from dsmc branchj
         run: |
           git fetch origin dsmc
           git show origin/dsmc:dsmc.py > dsmc.py

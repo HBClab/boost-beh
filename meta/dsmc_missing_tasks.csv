@@ -89,13 +89,12 @@ int,NE,9033,ses-1,DWL
 int,NE,9033,ses-1,NNB
 int,NE,9033,ses-1,NTS
 int,NE,9033,ses-1,VNB
+int,NE,9033,ses-2,VNB
 int,NE,9034,ses-1,VNB
 int,NE,9035,ses-1,NNB
 int,NE,9035,ses-1,VNB
 int,NE,9038,ses-1,VNB
 int,NE,9045,ses-1,DSST
-int,NE,9999,ses-1,AF
-int,NE,9999,ses-1,SM
 int,UI,8004,ses-3,AF
 int,UI,8005,ses-2,NNB
 int,UI,8005,ses-2,NTS
@@ -111,6 +110,9 @@ int,UI,8007,ses-1,PC
 int,UI,8007,ses-1,SM
 int,UI,8008,ses-2,NF
 int,UI,8008,ses-3,DWL
+int,UI,8009,ses-3,DSST
+int,UI,8009,ses-3,FN
+int,UI,8009,ses-3,VNB
 int,UI,8012,ses-3,VNB
 int,UI,8018,ses-2,VNB
 int,UI,8019,ses-3,NNB
@@ -143,6 +145,7 @@ int,UI,8037,ses-3,VNB
 int,UI,8038,ses-3,VNB
 int,UI,8046,ses-1,VNB
 int,UI,8047,ses-3,VNB
+int,UI,8048,ses-3,VNB
 int,UI,8053,ses-1,VNB
 int,UI,8054,ses-1,VNB
 int,UI,8061,ses-1,VNB

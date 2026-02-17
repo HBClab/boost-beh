@@ -51,9 +51,24 @@ class PS_QC:
             raw, self.MAXRT, self.RT_COLUMN_NAME
         )
 
-        print(f"Number of trials reaching MAXRT: {num_trials}")
-        print(f"Maximum consecutive trials reaching MAXRT: {max_consecutive}")
-        print(f"Consecutive trial ranges: {consecutive_ranges}")
+        if DSST and self.COND_COLUMN_NAME in raw.columns:
+            invalid_mask = raw[self.COND_COLUMN_NAME].isin([2, 2.0, "2"])
+            if invalid_mask.any():
+                subject = raw["subject_id"].iloc[0] if "subject_id" in raw.columns and not raw["subject_id"].empty else "<unknown>"
+                if "session" in raw.columns and not raw["session"].empty:
+                    session = raw["session"].iloc[0]
+                elif "session_number" in raw.columns and not raw["session_number"].empty:
+                    session = raw["session_number"].iloc[0]
+                else:
+                    session = "<unknown>"
+                task = raw["task"].iloc[0] if "task" in raw.columns and not raw["task"].empty else "<unknown>"
+                datetime_val = raw["datetime"].iloc[0] if "datetime" in raw.columns and not raw["datetime"].empty else "<unknown>"
+                print(
+                    "WARNING: DSST condition value 2 detected; "
+                    f"excluding {invalid_mask.sum()} rows "
+                    f"(task={task}, subject={subject}, session={session}, datetime={datetime_val})"
+                )
+                raw = raw.loc[~invalid_mask].copy()
 
         accuracy = QC_UTILS.get_acc_by_block_cond(raw, self.COND_COLUMN_NAME, self.ACC_COLUMN_NAME, self.CORRECT_SYMBOL, self.INCORRECT_SYMBOL)
         avg_acc = 0.0
@@ -62,40 +77,42 @@ class PS_QC:
                 avg_acc += acc
 
 
-                if condition not in [0,1]:
-                    raise ValueError("Invalid Ccondition Values")
+                if condition not in [0, 1]:
+                    subject = raw["subject_id"].iloc[0] if "subject_id" in raw.columns and not raw["subject_id"].empty else "<unknown>"
+                    if "session" in raw.columns and not raw["session"].empty:
+                        session = raw["session"].iloc[0]
+                    elif "session_number" in raw.columns and not raw["session_number"].empty:
+                        session = raw["session_number"].iloc[0]
+                    else:
+                        session = "<unknown>"
+                    task = raw["task"].iloc[0] if "task" in raw.columns and not raw["task"].empty else "<unknown>"
+                    datetime_val = raw["datetime"].iloc[0] if "datetime" in raw.columns and not raw["datetime"].empty else "<unknown>"
+                    raise ValueError(
+                        "Invalid Ccondition Values "
+                        f"(task={task}, subject={subject}, session={session}, datetime={datetime_val}, invalid={condition})"
+                    )
 
                 if condition == 1:
-                    print(f"Condition '{condition}': {acc}% accuracy")
                     if acc <= threshold:
                         CATEGORY = 2
-                        print(f"Condition/Block '{condition}' has accuracy <= 50% ({acc:.2f}%) and CATEGORY set to 2")
                     elif acc == 0:
                         CATEGORY = 3
-                        print(f"Condition/Block '{condition}' has accuracy == 0% and CATEGORY set to 3")
             avg_acc /= len(accuracy)
         else:
             for condition, acc in accuracy.items():
                 avg_acc += acc
-                print(f"Condition '{condition}': {acc:.2f}% accuracy")
                 if acc <= threshold:
                     CATEGORY = 2
-                    print(f"Condition/Block '{condition}' has accuracy <= 50% ({acc:.2f}%) and CATEGORY set to 2")
                 elif acc == 0:
                     CATEGORY = 3
-                    print(f"Condition/Block '{condition}' has accuracy == 0% and CATEGORY set to 3")
             avg_acc /= len(accuracy)
 
         if DSST and avg_acc <= 0.5:
             CATEGORY = 2
-            print(f"FOR DSST -> Average accuracy at or below 0.5 across conditions and CATEGORY set to 2")
 
         problematic_conditions = QC_UTILS.cond_block_not_reported(raw, self.ACC_COLUMN_NAME, self.COND_COLUMN_NAME, self.INCORRECT_SYMBOL)
 
         if len(problematic_conditions) != 0:
             CATEGORY = 3
-            print("Found unreported condition, category set to 3 ")
 
         return CATEGORY, accuracy
-
-

@@ -25,7 +25,7 @@ code/
     path_logic.py        # Optional helper to mirror generated outputs onto the BOOST file server
 
 data/                   # Subject-level caches (obs/int sites, then subject/task/data|plot)
-meta/                   # Auto-saved aggregate CSVs (master_acc, cc_master, ps_master, mem_master, wl_master)
+meta/                   # Aggregate CSVs rebuilt via META_RECREATE (cc_master, mem_master, ps_master, wl_master[_wide])
 group/plots/            # Example construct plots for quick reference
 requirements.txt        # Python dependencies for QC + plotting
 run.py                  # Flask placeholder (not yet active)
@@ -40,7 +40,7 @@ run.py                  # Flask placeholder (not yet active)
    - `MEM_QC` inspects FN/SM performance with RT + accuracy rollups.
    - `WL_QC` orchestrates fuzzy matching against version-specific keys, handling WL and DWL simultaneously.
 4. **Visualize** – `plot_utils` generates construct-appropriate figures (per-condition counts, RT distributions, WL learning curves, etc.).
-5. **Persist** – `SAVE_EVERYTHING` stores per-participant CSVs and plots under `data/<study>/<site>/<subject>/<task>/`. `Handler._persist_all_masters()` writes aggregate CSVs into `meta/` on every successful task run to keep analytics in sync.
+5. **Persist** – `SAVE_EVERYTHING` stores per-participant CSVs and plots under `data/<study>/<site>/<subject>/<task>/`. Once the task artifacts are saved, `META_RECREATE` is invoked for every domain so the aggregate CSVs in `meta/` stay synchronized with the subject-level cache.
 
 ## Supported Tasks
 | Construct | Tasks | Notes |
@@ -73,11 +73,10 @@ python code/main_handler.py all
 python code/main_handler.py AF
 ```
 
-Outputs land under `data/` using the subject -> task folder pattern enforced by `SAVE_EVERYTHING`. Every run also refreshes the aggregated CSVs in `meta/`:
-- `master_acc.csv`: high-level accuracy summaries for PS/MEM tasks.
+Outputs land under `data/` using the subject -> task folder pattern enforced by `SAVE_EVERYTHING`. Every run also refreshes the aggregated CSVs in `meta/` via `META_RECREATE`:
 - `cc_master.csv`: condition-level accuracy + mean RT for CC tasks.
-- `ps_master.csv`: per-block correct counts for PS tasks.
 - `mem_master.csv`: joined counts/RT/accuracy for FN/SM.
+- `ps_master.csv`: per-block correct counts for PS tasks.
 - `wl_master_wide.csv` & `wl_master.csv`: wide vs flattened WL summaries combining WL + DWL submissions.
 
 ## Visual Artifacts
@@ -95,13 +94,13 @@ Outputs land under `data/` using the subject -> task folder pattern enforced by 
 ## Extending the Pipeline
 1. Add the new task code and study IDs to `Handler.IDs`.
 2. Implement construct logic under `code/data_processing/` (reuse helpers in `utils.py` when possible).
-3. Register the new branch in `Handler.choose_construct()` and add persistence hooks for master CSVs.
+3. Register the new branch in `Handler.choose_construct()` and extend `META_RECREATE` if new aggregate metrics are required.
 4. Document the task behavior and update tests/fixtures to reflect the new data expectations.
 
 ## Troubleshooting
 - **No data returned from JATOS**: confirm the study IDs in `Handler.IDs` and that your token has access; adjust the `days_ago` window if you are backfilling.
 - **Missing session folders**: ensure input CSVs include `session` or `session_number`. `SAVE_EVERYTHING` uses those columns to label artifacts.
-- **WL metrics look stale**: WL and DWL write to the same `wl_master` rows via `_upsert_wl_master`; make sure both tasks are run for each session to populate delay scores.
+- **WL metrics look stale**: Rerun both WL and DWL so their subject CSVs exist before `META_RECREATE` rebuilds the wide/flat summaries.
 
 ## License & Data Privacy
 This repository processes sensitive participant responses. Keep tokens, raw exports, and downstream artifacts off public machines. Add new temp/output folders to `.gitignore` as needed to avoid leaking data.

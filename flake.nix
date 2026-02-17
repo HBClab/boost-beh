@@ -59,6 +59,8 @@
               ps.pyarrow
               ps.termcolor
               ps.fuzzywuzzy
+              ps.flake8
+              ps.pytest
             ] ++ [ catppuccin-jupyterlab ]
           );
         in {

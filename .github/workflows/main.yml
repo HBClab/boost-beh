@@ -3,7 +3,9 @@ name: Boost CA workflow
 on:
   schedule:
     - cron: '1 0 * * *'
-
+  push:
+    branches:
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest

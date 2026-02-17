@@ -51,31 +51,22 @@ class MEM_QC:
             raw, self.MAXRT, self.RT_COLUMN_NAME
         )
 
-        print(f"Number of trials reaching MAXRT: {num_trials}")
-        print(f"Maximum consecutive trials reaching MAXRT: {max_consecutive}")
-        print(f"Consecutive trial ranges: {consecutive_ranges}")
-
         accuracy = QC_UTILS.get_acc_by_block_cond(raw, self.COND_COLUMN_NAME, self.ACC_COLUMN_NAME, self.CORRECT_SYMBOL, self.INCORRECT_SYMBOL)
         avg_acc = 0.0
         for condition, acc in accuracy.items():
             avg_acc += acc
-            print(f"Condition '{condition}': {acc:.2f}% accuracy")
             if acc <= threshold:
                 CATEGORY = 2
-                print(f"Condition/Block '{condition}' has accuracy <= 50% ({acc:.2f}%) and CATEGORY set to 2")
             elif acc == 0:
                 CATEGORY = 3
-                print(f"Condition/Block '{condition}' has accuracy == 0% and CATEGORY set to 3")
         avg_acc /= len(accuracy)
 
         problematic_conditions = QC_UTILS.cond_block_not_reported(raw, self.ACC_COLUMN_NAME, self.COND_COLUMN_NAME, self.INCORRECT_SYMBOL)
 
         if len(problematic_conditions) != 0:
             CATEGORY = 3
-            print("Found unreported condition, category set to 3 ")
 
         return CATEGORY, accuracy
-
 
 
 

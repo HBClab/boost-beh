@@ -1,0 +1,56 @@
+name: Cleanup old nightly branches
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # runs daily at 3am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install gh -y
+
+      - name: Delete nightly branches older than 7 days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          CUTOFF_DATE=$(date -d "7 days ago" +%s)
+          echo "Cutoff timestamp: $CUTOFF_DATE"
+
+          # paginate through all branches
+          gh api repos/${{ github.repository }}/branches --paginate -q '.[].name' | while read branch; do
+            if [[ "$branch" == nightly/* ]]; then
+              echo "Checking $branch..."
+
+              # skip if PR is open for this branch
+              PR_COUNT=$(gh pr list --head "$branch" --state open --json number -q 'length')
+              if [ "$PR_COUNT" -gt 0 ]; then
+                echo "Skipping $branch (open PR exists)"
+                continue
+              fi
+
+              # get last commit date
+              COMMIT_DATE=$(gh api repos/${{ github.repository }}/commits/$branch -q '.commit.committer.date')
+              COMMIT_TS=$(date -d "$COMMIT_DATE" +%s)
+
+              if [ "$COMMIT_TS" -lt "$CUTOFF_DATE" ]; then
+                echo "Deleting $branch (last commit: $COMMIT_DATE)"
+                git push origin --delete "$branch"
+              else
+                echo "Keeping $branch (recent)"
+              fi
+            fi
+          done

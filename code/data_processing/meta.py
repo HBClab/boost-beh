@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import tasks
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -27,6 +28,7 @@ class META_RECREATE:
         META_RECREATE().recreate("mem")
         META_RECREATE().recreate("ps")
         META_RECREATE().recreate("wl")
+        META_RECREATE().recreate("ts")
 
     Each invocation rewrites the corresponding meta CSV(s) under ``meta/``.
     """
@@ -35,6 +37,7 @@ class META_RECREATE:
     MEM_TASKS = {"FN", "SM"}
     PS_TASKS = {"PC", "LC", "DSST"}
     WL_TASKS = {"WL", "DWL"}
+    TS_TASKS = {"ATS", "NTS"}
 
     FILENAME_PATTERN = re.compile(r"(?P<subject>\d+)_ses-(?P<session>[^_]+)_cat-")
 
@@ -79,6 +82,12 @@ class META_RECREATE:
             target = self.meta_root / "ps_master.csv"
             self._write_atomic(df, target)
             return {"ps_master.csv": target}
+        
+        if domain_key == "ts":
+            df = self._build_ts_master()
+            target = self.meta_root / "ts_master.csv"
+            self._write_atomic(df, target)
+            return {"ts_master.csv": target}
 
         if domain_key == "wl":
             wide, flat = self._build_wl_master()
@@ -90,11 +99,14 @@ class META_RECREATE:
                 "wl_master_wide.csv": wide_target,
                 "wl_master.csv": flat_target,
             }
+        
+        
 
         raise ValueError(
-            "Domain must be one of {'cc', 'mem', 'ps', 'wl'}; "
+            "Domain must be one of {'cc', 'mem', 'ps', 'wl', 'ts'}; "
             f"received '{domain}'."
         )
+        
 
     # ----------------------------------------------------------------- helpers
     def _write_atomic(self, df: pd.DataFrame, path: Path) -> None:
@@ -157,6 +169,8 @@ class META_RECREATE:
         if column in df.columns:
             df[column] = pd.to_numeric(df[column], errors="coerce")
         return df
+    
+    
 
     # ----------------------------------------------------------- domain builds
     def _build_cc_master(self) -> pd.DataFrame:
@@ -216,6 +230,60 @@ class META_RECREATE:
                 drop=True
             )
         return df
+    
+    def _build_ts_master(self) -> pd.DataFrame:
+        records: List[Dict[str, object]] = []
+
+        # only scan intervention cache
+        int_root = self.data_root / "int"
+
+        # only ATS for now
+        task = "ATS"
+
+        pattern = f"**/{task}/data/*.csv"
+        for csv_path in sorted(int_root.glob(pattern)):
+            df = pd.read_csv(csv_path)
+            if df.empty:
+                continue
+
+        # ATS should have 'line' — if not, skip that file
+            if "line" not in df.columns:
+                continue
+
+            identifiers = self._parse_identifiers(csv_path, df)
+
+        
+            diag = self._qc_utils.get_switching_cost(
+                df,
+                correct_only=True,
+                return_details=True
+            )
+
+            records.append({
+                "task": task,
+                "subject_id": identifiers.subject_id,
+                "session": identifiers.session,
+                **diag
+            })
+
+        out = pd.DataFrame(
+            records,
+            columns=[
+                "task",
+                "subject_id",
+                "session",
+                "n_total",
+                "n_switch",
+                "n_repeat",
+                "mean_rt_switch",
+                "mean_rt_repeat",
+                "switch_cost",
+            ],
+        )
+        if not out.empty:
+            out = out.sort_values(["task", "subject_id", "session"]).reset_index(drop=True)
+        return out
+
 
     def _build_mem_master(self) -> pd.DataFrame:
         records: List[Dict[str, object]] = []

@@ -1,0 +1,8 @@
+block_c,block_dur,condition,countdown,datetime,endtime,list,multichar_response,project,response,response_time,session_number,start_end,starttime,subject_id,task,task_vers,trial
+,,,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,,,O,space,437,1,,,7758,WL,C,
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,b,O,b,3988,1,,,7758,WL,C,1.0
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,bo,O,o,387,1,,,7758,WL,C,1.0
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,boo,O,o,170,1,,,7758,WL,C,1.0
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,boos,O,s,305,1,,,7758,WL,C,1.0
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,boost,O,t,295,1,,,7758,WL,C,1.0
+prac,,0.0,,Wed Apr 22 2026 14:09:33 GMT-0500 (Central Daylight Time),,NA,boostenter,O,enter,1286,1,,,7758,WL,C,1.0

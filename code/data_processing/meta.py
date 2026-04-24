@@ -233,57 +233,51 @@ class META_RECREATE:
     
     def _build_ts_master(self) -> pd.DataFrame:
         records: List[Dict[str, object]] = []
+        tasks = self.TS_TASKS  # {"ATS", "NTS"}
 
         # only scan intervention cache
-        int_root = self.data_root / "int"
+        roots = [
+            self.data_root / "int" / "UI",
+            self.data_root / "obs" / "UI",
+        ]
 
-        # only ATS for now
-        task = "ATS"
+        for root in roots:
+            for task in sorted(tasks):
+                pattern = f"**/{task}/data/*.csv"
+                for csv_path in sorted(root.glob(pattern)):
+                    df = pd.read_csv(csv_path)
+                    if df.empty:
+                        continue
 
-        pattern = f"**/{task}/data/*.csv"
-        for csv_path in sorted(int_root.glob(pattern)):
-            df = pd.read_csv(csv_path)
-            if df.empty:
-                continue
+                    identifiers = self._parse_identifiers(csv_path, df)
 
-        # ATS should have 'line' — if not, skip that file
-            if "line" not in df.columns:
-                continue
+                    switch_cost = self._qc_utils.get_switching_cost(
+                        df,
+                        correct_only=True,      # keep if that’s your convention
+                        test_block_value="test" # keep if that’s your convention
+                    )
 
-            identifiers = self._parse_identifiers(csv_path, df)
+                    mixing_cost = self._qc_utils.get_mixing_cost(
+                        df,
+                        correct_only=True,
+                        test_block_value="test"
+                    )
 
-        
-            diag = self._qc_utils.get_switching_cost(
-                df,
-                correct_only=True,
-                return_details=True
-            )
-
-            records.append({
-                "task": task,
-                "subject_id": identifiers.subject_id,
-                "session": identifiers.session,
-                **diag
-            })
+                    records.append({
+                        "task": task,
+                        "subject_id": identifiers.subject_id,
+                        "session": identifiers.session,
+                        "switch_cost": switch_cost,
+                        "mixing_cost": mixing_cost,
+                    })
 
         out = pd.DataFrame(
             records,
-            columns=[
-                "task",
-                "subject_id",
-                "session",
-                "n_total",
-                "n_switch",
-                "n_repeat",
-                "mean_rt_switch",
-                "mean_rt_repeat",
-                "switch_cost",
-            ],
+            columns=["task", "subject_id", "session", "switch_cost", "mixing_cost"],
         )
         if not out.empty:
             out = out.sort_values(["task", "subject_id", "session"]).reset_index(drop=True)
         return out
-
 
     def _build_mem_master(self) -> pd.DataFrame:
         records: List[Dict[str, object]] = []

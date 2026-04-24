@@ -367,34 +367,90 @@ class QC_UTILS:
     def get_switching_cost(
         df,
         rt_column_name="response_time",
-        block_cond_column_name="block_cond",
-        line_column_name="line",
-        order_columns=("block", "row_sel"),
+        img_column_name="con_img",
         test_block_value="test",
         correct_only=False,
         correct_column_name="correct",
         correct_symbol=1,
-        return_details=False,
     ):
         """
-        switching_cost = mean(RT_switch) - mean(RT_repeat)
+        Switching cost across ALL blocks (A/B/C), using CSV row order:
 
-        Switch definition:
-        1) current block_cond != previous block_cond
-        2) within block_cond == 'C': current line != previous line (solid <-> dash)
+            switch_cost = mean(RT_switch) - mean(RT_repeat)
 
-        If return_details=True, returns a dict with counts + mean RTs + switch_cost.
-        Otherwise returns just switch_cost (float).
+        where:
+            previous trial = previous ROW in the filtered dataframe (CSV line order)
+            switch = con_img != previous con_img
+            repeat = con_img == previous con_img
         """
 
         # ---- required columns
-        for col in (rt_column_name, block_cond_column_name, line_column_name):
+        for col in (rt_column_name, img_column_name):
             if col not in df.columns:
                 raise ValueError(f"Column '{col}' does not exist in the DataFrame.")
 
         data = df.copy()
 
-        # ---- optional filters
+        # ---- filter to test only (if block exists)
+        if "block" in data.columns and test_block_value is not None:
+            data = data[data["block"] == test_block_value].copy()
+
+        # ---- filter to correct only (optional)
+        if correct_only:
+            if correct_column_name not in data.columns:
+                raise ValueError(
+                    f"correct_only=True but column '{correct_column_name}' does not exist."
+                )
+            data[correct_column_name] = pd.to_numeric(data[correct_column_name], errors="coerce")
+            data = data[data[correct_column_name] == correct_symbol].copy()
+
+        if data.empty:
+            return float("nan")
+
+        # ---- keep CSV row order exactly; just reset index so shift(1) is clean
+        data = data.reset_index(drop=True)
+
+        prev_img = data[img_column_name].shift(1)
+        has_prev = prev_img.notna()
+
+        is_switch = has_prev & (data[img_column_name] != prev_img)
+        is_repeat = has_prev & (data[img_column_name] == prev_img)
+
+        mean_rt_switch = data.loc[is_switch, rt_column_name].mean()
+        mean_rt_repeat = data.loc[is_repeat, rt_column_name].mean()
+
+        if pd.isna(mean_rt_switch) or pd.isna(mean_rt_repeat):
+            return float("nan")
+
+        return float(mean_rt_switch - mean_rt_repeat)
+
+
+    @staticmethod
+    def get_mixing_cost(
+        df,
+        rt_column_name="response_time",
+        block_cond_column_name="block_cond",
+        test_block_value="test",
+        correct_only=False,
+        correct_column_name="correct",
+        correct_symbol=1,
+        ):
+        """
+        Mixing cost:
+            mixing_cost = mean(RT_C) - (mean(RT_A) + mean(RT_B)) / 2
+
+        Notes:
+        - Uses only rows where block == "test" (if the 'block' column exists).
+        - If correct_only=True, uses only rows where correct == correct_symbol.
+        - Does NOT sort; order doesn’t matter for block-wise means.
+        """
+
+        for col in (rt_column_name, block_cond_column_name):
+            if col not in df.columns:
+                raise ValueError(f"Column '{col}' does not exist in the DataFrame.")
+
+        data = df.copy()
+
         if "block" in data.columns and test_block_value is not None:
             data = data[data["block"] == test_block_value].copy()
 
@@ -407,59 +463,17 @@ class QC_UTILS:
             data = data[data[correct_column_name] == correct_symbol].copy()
 
         if data.empty:
-            details = {
-                "n_total": 0,
-                "n_switch": 0,
-                "n_repeat": 0,
-                "mean_rt_switch": float("nan"),
-                "mean_rt_repeat": float("nan"),
-                "switch_cost": float("nan"),
-            }
-            return details if return_details else details["switch_cost"]
+            return float("nan")
 
-        # ---- sort for lag logic
-        sort_cols = [c for c in order_columns if c in data.columns]
-        if sort_cols:
-            data = data.sort_values(sort_cols).reset_index(drop=True)
+        mean_rt_A = data.loc[data[block_cond_column_name] == "A", rt_column_name].mean()
+        mean_rt_B = data.loc[data[block_cond_column_name] == "B", rt_column_name].mean()
+        mean_rt_C = data.loc[data[block_cond_column_name] == "C", rt_column_name].mean()
 
-        # ---- lag values
-        data["_prev_block_cond"] = data[block_cond_column_name].shift(1)
-        data["_prev_line"] = data[line_column_name].shift(1)
+        if pd.isna(mean_rt_A) or pd.isna(mean_rt_B) or pd.isna(mean_rt_C):
+            return float("nan")
 
-        has_prev = data["_prev_block_cond"].notna()
+        return float(mean_rt_C - ((mean_rt_A + mean_rt_B) / 2))
 
-        block_change_switch = data[block_cond_column_name] != data["_prev_block_cond"]
-        within_c_line_switch = (
-            (data[block_cond_column_name] == "C")
-            & has_prev
-            & (data[line_column_name] != data["_prev_line"])
-        )
-
-        data["_is_switch"] = (block_change_switch | within_c_line_switch) & has_prev
-        data["_is_repeat"] = (~data["_is_switch"]) & has_prev
-
-        n_total = int(len(data))
-        n_switch = int(data["_is_switch"].sum())
-        n_repeat = int(data["_is_repeat"].sum())
-
-        mean_rt_switch = data.loc[data["_is_switch"], rt_column_name].mean()
-        mean_rt_repeat = data.loc[data["_is_repeat"], rt_column_name].mean()
-
-        if pd.isna(mean_rt_switch) or pd.isna(mean_rt_repeat):
-            switch_cost = float("nan")
-        else:
-            switch_cost = float(mean_rt_switch - mean_rt_repeat)
-
-        details = {
-            "n_total": n_total,
-            "n_switch": n_switch,
-            "n_repeat": n_repeat,
-            "mean_rt_switch": float(mean_rt_switch) if pd.notna(mean_rt_switch) else float("nan"),
-            "mean_rt_repeat": float(mean_rt_repeat) if pd.notna(mean_rt_repeat) else float("nan"),
-            "switch_cost": switch_cost,
-        }
-
-        return details if return_details else switch_cost
 
 
 import pandas as pd

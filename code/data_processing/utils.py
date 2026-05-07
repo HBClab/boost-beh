@@ -361,6 +361,119 @@ class QC_UTILS:
                 problematic_blocks.append(block)
 
         return problematic_blocks
+    
+    
+    @staticmethod
+    def get_switching_cost(
+        df,
+        rt_column_name="response_time",
+        img_column_name="con_img",
+        test_block_value="test",
+        correct_only=False,
+        correct_column_name="correct",
+        correct_symbol=1,
+    ):
+        """
+        Switching cost across ALL blocks (A/B/C), using CSV row order:
+
+            switch_cost = mean(RT_switch) - mean(RT_repeat)
+
+        where:
+            previous trial = previous ROW in the filtered dataframe (CSV line order)
+            switch = con_img != previous con_img
+            repeat = con_img == previous con_img
+        """
+
+        # ---- required columns
+        for col in (rt_column_name, img_column_name):
+            if col not in df.columns:
+                raise ValueError(f"Column '{col}' does not exist in the DataFrame.")
+
+        data = df.copy()
+
+        # ---- filter to test only (if block exists)
+        if "block" in data.columns and test_block_value is not None:
+            data = data[data["block"] == test_block_value].copy()
+
+        # ---- filter to correct only (optional)
+        if correct_only:
+            if correct_column_name not in data.columns:
+                raise ValueError(
+                    f"correct_only=True but column '{correct_column_name}' does not exist."
+                )
+            data[correct_column_name] = pd.to_numeric(data[correct_column_name], errors="coerce")
+            data = data[data[correct_column_name] == correct_symbol].copy()
+
+        if data.empty:
+            return float("nan")
+
+        # ---- keep CSV row order exactly; just reset index so shift(1) is clean
+        data = data.reset_index(drop=True)
+
+        prev_img = data[img_column_name].shift(1)
+        has_prev = prev_img.notna()
+
+        is_switch = has_prev & (data[img_column_name] != prev_img)
+        is_repeat = has_prev & (data[img_column_name] == prev_img)
+
+        mean_rt_switch = data.loc[is_switch, rt_column_name].mean()
+        mean_rt_repeat = data.loc[is_repeat, rt_column_name].mean()
+
+        if pd.isna(mean_rt_switch) or pd.isna(mean_rt_repeat):
+            return float("nan")
+
+        return float(mean_rt_switch - mean_rt_repeat)
+
+
+    @staticmethod
+    def get_mixing_cost(
+        df,
+        rt_column_name="response_time",
+        block_cond_column_name="block_cond",
+        test_block_value="test",
+        correct_only=False,
+        correct_column_name="correct",
+        correct_symbol=1,
+        ):
+        """
+        Mixing cost:
+            mixing_cost = mean(RT_C) - (mean(RT_A) + mean(RT_B)) / 2
+
+        Notes:
+        - Uses only rows where block == "test" (if the 'block' column exists).
+        - If correct_only=True, uses only rows where correct == correct_symbol.
+        - Does NOT sort; order doesn’t matter for block-wise means.
+        """
+
+        for col in (rt_column_name, block_cond_column_name):
+            if col not in df.columns:
+                raise ValueError(f"Column '{col}' does not exist in the DataFrame.")
+
+        data = df.copy()
+
+        if "block" in data.columns and test_block_value is not None:
+            data = data[data["block"] == test_block_value].copy()
+
+        if correct_only:
+            if correct_column_name not in data.columns:
+                raise ValueError(
+                    f"correct_only=True but column '{correct_column_name}' does not exist."
+                )
+            data[correct_column_name] = pd.to_numeric(data[correct_column_name], errors="coerce")
+            data = data[data[correct_column_name] == correct_symbol].copy()
+
+        if data.empty:
+            return float("nan")
+
+        mean_rt_A = data.loc[data[block_cond_column_name] == "A", rt_column_name].mean()
+        mean_rt_B = data.loc[data[block_cond_column_name] == "B", rt_column_name].mean()
+        mean_rt_C = data.loc[data[block_cond_column_name] == "C", rt_column_name].mean()
+
+        if pd.isna(mean_rt_A) or pd.isna(mean_rt_B) or pd.isna(mean_rt_C):
+            return float("nan")
+
+        return float(mean_rt_C - ((mean_rt_A + mean_rt_B) / 2))
+
 
 
 import pandas as pd

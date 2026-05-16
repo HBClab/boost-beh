@@ -1,0 +1,10 @@
+block_c,block_dur,condition,countdown,datetime,endtime,list,multichar_response,project,response,response_time,session_number,start_end,starttime,subject_id,task,task_vers,trial
+,,,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,,,I,space,1028,1111,,,7777,WL,C,
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,b,I,b,466,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,bo,I,o,104,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,bos,I,s,317,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,bo,I,backspace,432,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,boo,I,o,420,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,boos,I,s,195,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,boost,I,t,66,1111,,,7777,WL,C,1.0
+prac,,0.0,,Fri May 15 2026 10:28:04 GMT-0400 (Eastern Daylight Time),,NA,boostenter,I,enter,1270,1111,,,7777,WL,C,1.0

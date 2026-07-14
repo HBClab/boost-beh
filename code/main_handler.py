@@ -83,7 +83,7 @@ class Handler:
         pull_instance = Pull(
             self.IDs[task],
             tease="WEEEEEEEEEEEEEE",
-            token="jap_5ThOJ14yf7z1EPEUpAoZYMWoETZcmJk305719",
+            token="jap_Bh04rYGbXkDThBhPOxYjrKKvejG58vsc2b289",
             taskName=task,
             proxy=False
         )

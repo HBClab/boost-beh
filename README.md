@@ -60,9 +60,11 @@ To target a single task, run `python code/main_handler.py WL`. To mirror the nig
    pip install -r requirements.txt
    ```
 2. (Optional) If you are on Nix, `nix develop` provisions the toolchain.
-3. Configure secrets:
-   - `Handler.pull()` currently references a token inline. Replace with an environment variable (e.g., `JATOS_TOKEN`) and export it before running.
-   - Proxy credentials (`tease`) should also come from the environment or an `.env` file that is not committed.
+3. Configure secrets (env vars; never commit tokens):
+   - `JATOS_TOKEN` — required for `Handler.pull()`.
+   - `JATOS_BASE_URL` — optional; defaults to `https://pbsjatos.psychology.uiowa.edu`.
+   - `TEASE` — optional proxy password (local proxy path only; nightly uses `proxy=False`).
+   - GitHub Actions: set repo secret `JATOS_TOKEN` and optional variable `JATOS_BASE_URL`.
 
 ## Running QC Locally
 ```bash

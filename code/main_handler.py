@@ -1,3 +1,4 @@
+import os
 import warnings
 from data_processing.meta import META_RECREATE
 from data_processing.pull_handler import Pull
@@ -17,20 +18,23 @@ warnings.filterwarnings("ignore")
 class Handler:
 
     def __init__(self):
+        # pbsjatos studyIds (title-matched from old-server IA/IB/IC/OA/OB/OC).
+        # Order preserved when present: OA, OB, OC, IA, IB, IC.
+        # Many OA/OB/OC studies not yet on pbsjatos — lists may be <6.
         self.IDs = {
-            "AF": [945, 960, 990, 898, 919, 932],
-            "ATS": [947, 961, 984, 918, 920, 933],
-            "DSST": [949, 975, 986, 901, 959, 935],
-            "DWL": [948, 974, 985, 900, 921, 934],
-            "FN": [950, 964, 987, 902, 923, 936],
-            "LC": [951, 976, 988, 903, 924, 937],
-            "NF": [980, 981, 982, 978, 979, 977],
-            "NNB": [946, 967, 989, 905, 929, 939],
-            "NTS": [953, 968, 991, 906, 930, 940],
-            "PC": [954, 969, 992, 912, 925, 941],
-            "SM": [955, 970, 993, 916, 926, 996],
-            "VNB": [957, 971, 994, 915, 928, 943],
-            "WL": [958, 972, 995, 910, 927, 944]
+            "AF": [11, 30, 42],  # IA/IB/IC_AF
+            "ATS": [8, 22, 41],
+            "DSST": [10, 21, 43],
+            "DWL": [17, 24, 38],
+            "FN": [81, 18, 28, 39],  # OC_FN + IA/IB/IC
+            "LC": [14, 31, 44],
+            "NF": [47, 12, 33, 46],  # OA_NF + IA/IB/IC
+            "NNB": [67, 83, 15, 27, 36],  # OB/OC + IA/IB/IC
+            "NTS": [19, 25, 40],
+            "PC": [20, 26, 37],
+            "SM": [13, 32, 45],
+            "VNB": [85, 16, 29, 34],  # OC_VNB + IA/IB/IC
+            "WL": [7, 23, 35],
         }
 
         self._meta_recreator = META_RECREATE()
@@ -80,10 +84,16 @@ class Handler:
         self._meta_rebuild_pending = False
 
     def pull(self, task):
+        token = os.environ.get("JATOS_TOKEN", "").strip()
+        if not token:
+            raise RuntimeError(
+                "JATOS_TOKEN env var required (see HBC .env/.env). "
+                "Do not hardcode tokens in source."
+            )
         pull_instance = Pull(
             self.IDs[task],
-            tease="WEEEEEEEEEEEEEE",
-            token="jap_5ThOJ14yf7z1EPEUpAoZYMWoETZcmJk305719",
+            tease=os.environ.get("TEASE", ""),
+            token=token,
             taskName=task,
             proxy=False
         )

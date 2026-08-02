@@ -31,6 +31,11 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run Python script
+        env:
+          # Prefer JATOS_TOKEN; fall back to legacy repo secret TOKEN if present.
+          JATOS_TOKEN: ${{ secrets.JATOS_TOKEN || secrets.TOKEN }}
+          JATOS_BASE_URL: ${{ vars.JATOS_BASE_URL || 'https://pbsjatos.psychology.uiowa.edu' }}
+          TEASE: ${{ secrets.TEASE }}
         run: |
           python code/main_handler.py all
 

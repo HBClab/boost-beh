@@ -15,10 +15,14 @@ class Pull:
         if not isinstance(taskIds, list):
             raise ValueError("task IDs is not a valid list, must be of type list (e.g. [123, 123, 123, ..., 123])")
             sys.exit()
-        elif len(taskIds) != 6:
-            raise ValueError(f"Not all IDs are in the list. Missing {6 - len(taskIds)} tasks")
+        # pbsjatos may not yet host all OA/OB/OC variants; allow 1–6 studyIds.
+        cleaned = [int(x) for x in taskIds if x is not None]
+        if not cleaned:
+            raise ValueError("task IDs list is empty")
+        if len(cleaned) > 6:
+            raise ValueError(f"Expected at most 6 studyIds, got {len(cleaned)}")
         else:
-            self.IDs = taskIds
+            self.IDs = cleaned
         self.tease = tease
         self.token = token
         self.taskName = taskName
@@ -29,7 +33,7 @@ class Pull:
         from datetime import datetime, timedelta
 
         proxies = {
-        'http': f'http:zjgilliam:{self.tease}@proxy.divms.uiowa.edu:8888',
+        'http': f'http://zjgilliam:{self.tease}@proxy.divms.uiowa.edu:8888',
         'https': f'http://zjgilliam:{self.tease}@proxy.divms.uiowa.edu:8888',
         }
 

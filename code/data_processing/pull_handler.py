@@ -33,7 +33,10 @@ class Pull:
         'https': f'http://zjgilliam:{self.tease}@proxy.divms.uiowa.edu:8888',
         }
 
-        url = 'https://jatos.psychology.uiowa.edu/jatos/api/v1/results/metadata'
+        base = os.environ.get(
+            "JATOS_BASE_URL", "https://pbsjatos.psychology.uiowa.edu"
+        ).rstrip("/")
+        url = f"{base}/jatos/api/v1/results/metadata"
         headers = {
             'accept': 'application/json',
             'Authorization': f"Bearer {self.token}" ,
@@ -115,7 +118,10 @@ class Pull:
             'studyIds': self.IDs,
             'studyResultIds': study_result_ids
         }
-        url = 'https://jatos.psychology.uiowa.edu/jatos/api/v1/results/data'
+        base = os.environ.get(
+            "JATOS_BASE_URL", "https://pbsjatos.psychology.uiowa.edu"
+        ).rstrip("/")
+        url = f"{base}/jatos/api/v1/results/data"
 
         if self.proxy:
 

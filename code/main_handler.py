@@ -1,3 +1,4 @@
+import os
 import warnings
 from data_processing.meta import META_RECREATE
 from data_processing.pull_handler import Pull
@@ -80,10 +81,16 @@ class Handler:
         self._meta_rebuild_pending = False
 
     def pull(self, task):
+        token = os.environ.get("JATOS_TOKEN", "").strip()
+        if not token:
+            raise RuntimeError(
+                "JATOS_TOKEN env var required (see HBC .env/.env). "
+                "Do not hardcode tokens in source."
+            )
         pull_instance = Pull(
             self.IDs[task],
-            tease="WEEEEEEEEEEEEEE",
-            token="jap_5ThOJ14yf7z1EPEUpAoZYMWoETZcmJk305719",
+            tease=os.environ.get("TEASE", ""),
+            token=token,
             taskName=task,
             proxy=False
         )

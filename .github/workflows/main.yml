@@ -32,7 +32,8 @@ jobs:
 
       - name: Run Python script
         env:
-          JATOS_TOKEN: ${{ secrets.JATOS_TOKEN }}
+          # Prefer JATOS_TOKEN; fall back to legacy repo secret TOKEN if present.
+          JATOS_TOKEN: ${{ secrets.JATOS_TOKEN || secrets.TOKEN }}
           JATOS_BASE_URL: ${{ vars.JATOS_BASE_URL || 'https://pbsjatos.psychology.uiowa.edu' }}
           TEASE: ${{ secrets.TEASE }}
         run: |

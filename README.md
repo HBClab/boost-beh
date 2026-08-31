@@ -32,7 +32,7 @@ run.py                  # Flask placeholder (not yet active)
 ```
 
 ## Data & QC Flow
-1. **Pull** – `Pull` in `pull_handler.py` requests study metadata + data blobs from JATOS for the study IDs defined in `Handler.IDs`. `days_ago` defaults to 127 but can be overridden when calling `load()`.
+1. **Pull** – `Pull` in `pull_handler.py` requests study metadata + data blobs from JATOS. Study IDs are discovered on **pbsjatos** at runtime (`code/jatos_study_ids.py`); missing OA/OB/OC sites fall back to the **legacy** server when `JATOS_LEGACY_TOKEN` is set. See `docs/jatos_pbsjatos.md`.
 2. **Normalize** – `CONVERT_TO_CSV` flattens newline-delimited JSON into tidy Pandas frames ready for QC.
 3. **QC & Metrics** – `Handler.choose_construct()` routes each task to its construct-specific QC class:
    - `CCqC` enforces max RT checks, per-condition accuracy thresholds, and task-switching rules.

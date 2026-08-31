@@ -1,5 +1,12 @@
 import os
 import warnings
+
+from jatos_study_ids import (
+    handler_ids_from_titles,
+    legacy_obs_ids_for_task,
+    migration_status,
+    refresh_discovered,
+)
 from data_processing.meta import META_RECREATE
 from data_processing.pull_handler import Pull
 from data_processing.cc_qc import CCqC
@@ -18,24 +25,20 @@ warnings.filterwarnings("ignore")
 class Handler:
 
     def __init__(self):
-        # pbsjatos studyIds (title-matched from old-server IA/IB/IC/OA/OB/OC).
-        # Order preserved when present: OA, OB, OC, IA, IB, IC.
-        # Many OA/OB/OC studies not yet on pbsjatos — lists may be <6.
-        self.IDs = {
-            "AF": [11, 30, 42],  # IA/IB/IC_AF
-            "ATS": [8, 22, 41],
-            "DSST": [10, 21, 43],
-            "DWL": [17, 24, 38],
-            "FN": [81, 18, 28, 39],  # OC_FN + IA/IB/IC
-            "LC": [14, 31, 44],
-            "NF": [47, 12, 33, 46],  # OA_NF + IA/IB/IC
-            "NNB": [67, 83, 15, 27, 36],  # OB/OC + IA/IB/IC
-            "NTS": [19, 25, 40],
-            "PC": [20, 26, 37],
-            "SM": [13, 32, 45],
-            "VNB": [85, 16, 29, 34],  # OC_VNB + IA/IB/IC
-            "WL": [7, 23, 35],
-        }
+        self._pbs_titles = refresh_discovered()
+        self.IDs = handler_ids_from_titles(self._pbs_titles)
+        status = migration_status(self._pbs_titles)
+        cprint(
+            f"pbsjatos studies: {status['n_present']}/{status['n_expected']} "
+            f"(OBS missing: {status['n_missing_obs']})",
+            "cyan",
+        )
+        if status["n_missing_obs"]:
+            cprint(
+                "OBS OA/OB/OC not fully on pbsjatos — "
+                "nightly uses legacy server when JATOS_LEGACY_TOKEN is set",
+                "yellow",
+            )
 
         self._meta_recreator = META_RECREATE()
         self._meta_rebuild_pending = False
@@ -90,15 +93,54 @@ class Handler:
                 "JATOS_TOKEN env var required (see HBC .env/.env). "
                 "Do not hardcode tokens in source."
             )
-        pull_instance = Pull(
-            self.IDs[task],
-            tease=os.environ.get("TEASE", ""),
-            token=token,
-            taskName=task,
-            proxy=False
+        tease = os.environ.get("TEASE", "")
+        proxy = os.environ.get("JATOS_PROXY", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
         )
+        days_ago = int(os.environ.get("JATOS_DAYS_AGO", "127"))
+        txt_dfs = []
 
-        txt_dfs = pull_instance.load(days_ago=127)
+        pbs_ids = self.IDs.get(task, [])
+        if pbs_ids:
+            pull_pbs = Pull(
+                pbs_ids,
+                tease=tease,
+                token=token,
+                taskName=task,
+                proxy=proxy,
+                base_url=os.environ.get("JATOS_BASE_URL"),
+            )
+            txt_dfs.extend(pull_pbs.load(days_ago=days_ago) or [])
+
+        legacy_pull = os.environ.get("JATOS_LEGACY_PULL", "1").strip().lower() not in (
+            "0",
+            "false",
+            "no",
+        )
+        legacy_token = os.environ.get("JATOS_LEGACY_TOKEN", "").strip()
+        legacy_obs_ids = legacy_obs_ids_for_task(task, set(self._pbs_titles))
+        if legacy_pull and legacy_token and legacy_obs_ids:
+            legacy_base = os.environ.get(
+                "JATOS_LEGACY_BASE_URL", "https://jatos.psychology.uiowa.edu"
+            )
+            legacy_days = int(os.environ.get("JATOS_LEGACY_DAYS_AGO", "2000"))
+            cprint(
+                f"legacy OBS pull {task}: studyIds={legacy_obs_ids} "
+                f"days_ago={legacy_days}",
+                "yellow",
+            )
+            pull_legacy = Pull(
+                legacy_obs_ids,
+                tease=tease,
+                token=legacy_token,
+                taskName=task,
+                proxy=proxy,
+                base_url=legacy_base,
+            )
+            txt_dfs.extend(pull_legacy.load(days_ago=legacy_days) or [])
+
         return self.convert_to_csv(txt_dfs, task)
 
     def convert_to_csv(self, txt_dfs, task):

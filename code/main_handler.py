@@ -114,7 +114,7 @@ class Handler:
             )
             txt_dfs.extend(pull_pbs.load(days_ago=days_ago) or [])
 
-        legacy_pull = os.environ.get("JATOS_LEGACY_PULL", "1").strip().lower() not in (
+        legacy_pull = os.environ.get("JATOS_LEGACY_PULL", "0").strip().lower() not in (
             "0",
             "false",
             "no",

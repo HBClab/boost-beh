@@ -1,8 +1,10 @@
 # pbsjatos migration
 
 BOOST behavioral pipeline pulls from **pbsjatos** (`https://pbsjatos.psychology.uiowa.edu`).
-Until all observational (OA/OB/OC) studies are imported, nightlies also pull missing OBS
-sites from the **legacy** server when `JATOS_LEGACY_TOKEN` is set.
+
+**Legacy server (`jatos.psychology.uiowa.edu`) is permanently down** — do not configure
+`JATOS_LEGACY_TOKEN` or expect `JATOS_LEGACY_PULL`. Historical OBS data: Jul 2026 zip dump
+on LSS + finish importing OA/OB/OC studies onto pbsjatos.
 
 ## Study layout
 
@@ -25,18 +27,17 @@ sites from the **legacy** server when `JATOS_LEGACY_TOKEN` is set.
 |----------|---------|---------|
 | `JATOS_TOKEN` | (required) | pbsjatos API token |
 | `JATOS_BASE_URL` | pbsjatos URL | Primary server |
-| `JATOS_LEGACY_TOKEN` | — | Old server token for OA/OB/OC backfill |
-| `JATOS_LEGACY_BASE_URL` | `https://jatos.psychology.uiowa.edu` | Legacy host |
-| `JATOS_LEGACY_PULL` | `1` | Set `0` when OBS fully migrated |
-| `JATOS_LEGACY_DAYS_AGO` | `2000` | Wide window for historical OBS |
+| `JATOS_LEGACY_PULL` | `0` | **Keep off** — legacy host decommissioned |
 | `JATOS_DAYS_AGO` | `127` | Primary pull window |
 | `JATOS_DISCOVER_IDS` | `1` | Scan studyIds 1–200 on pbsjatos at startup |
+
+Legacy env vars (`JATOS_LEGACY_TOKEN`, etc.) remain in code for reference only; unused while old server is down.
 
 ## After importing OA/OB/OC studies on pbsjatos
 
 1. Run `python scripts/refresh_jatos_ids.py` (updates `jatos_discovered_ids.json`)
 2. Confirm `migration_status` shows fewer missing OBS titles
-3. When all 78 titles present, set `JATOS_LEGACY_PULL=0` in Actions
+3. When all 78 titles present, migration complete (no legacy fallback needed)
 
 ## Legacy site order
 

@@ -1,10 +1,11 @@
 # pbsjatos migration
 
-BOOST behavioral pipeline pulls from **pbsjatos** (`https://pbsjatos.psychology.uiowa.edu`).
+BOOST behavioral pipeline primary pull target is **pbsjatos**
+(`https://pbsjatos.psychology.uiowa.edu`).
 
-**Legacy server (`jatos.psychology.uiowa.edu`) is permanently down** — do not configure
-`JATOS_LEGACY_TOKEN` or expect `JATOS_LEGACY_PULL`. Historical OBS data: Jul 2026 zip dump
-on LSS + finish importing OA/OB/OC studies onto pbsjatos.
+**Legacy host (`jatos.psychology.uiowa.edu`):** still reachable (HTTP 303 as of
+2026-09-08; Sydney can use the UI). Prefer pbsjatos for new collection + nightly.
+Legacy pull env (`JATOS_LEGACY_*`) is optional for OBS studies not yet imported.
 
 ## Study layout
 
@@ -27,7 +28,7 @@ on LSS + finish importing OA/OB/OC studies onto pbsjatos.
 |----------|---------|---------|
 | `JATOS_TOKEN` | (required) | pbsjatos API token |
 | `JATOS_BASE_URL` | pbsjatos URL | Primary server |
-| `JATOS_LEGACY_PULL` | `0` | **Keep off** — legacy host decommissioned |
+| `JATOS_LEGACY_PULL` | `0` | Set `1` only if intentionally pulling OBS from old host |
 | `JATOS_DAYS_AGO` | `127` | Primary pull window |
 | `JATOS_DISCOVER_IDS` | `1` | Scan studyIds 1–200 on pbsjatos at startup |
 

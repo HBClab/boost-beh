@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 from math import pi
 import matplotlib
+from .utils import WL_MATCH_THRESHOLD
 
 class CC_PLOTS:
     matplotlib.use('Agg')
@@ -555,13 +556,16 @@ class MEM_PLOTS:
         )
         plt.xticks(rotation=90)
         for i in range(len(df_immediate)):
-            if df_immediate.iloc[i]['ratio'] < 75:
+            if df_immediate.iloc[i]['ratio'] <= WL_MATCH_THRESHOLD:
                 plt.text(
                     x=df_immediate.iloc[i]['best_match'], y=df_immediate.iloc[i]['ratio'],
                     s=df_immediate.iloc[i]['word'], fontsize=9, color='black',
                     horizontalalignment='right', verticalalignment='bottom'
                 )
-        plt.axhline(y=75, color='r', linestyle='--')
+        plt.axhline(
+            y=WL_MATCH_THRESHOLD, color='r', linestyle='--',
+            label=f'scoring threshold ({WL_MATCH_THRESHOLD})'
+        )
         plt.title('Immediate Condition: Ratio vs. Best Match')
         plt.xlabel('Best Match')
         plt.ylabel('Ratio')
@@ -588,13 +592,16 @@ class MEM_PLOTS:
         )
         plt.xticks(rotation=90)
         for i in range(len(df_delay)):
-            if df_delay.iloc[i]['ratio'] < 75:
+            if df_delay.iloc[i]['ratio'] <= WL_MATCH_THRESHOLD:
                 plt.text(
                     x=df_delay.iloc[i]['word'], y=df_delay.iloc[i]['ratio'],
                     s=df_delay.iloc[i]['word'], fontsize=9, color='black',
                     horizontalalignment='right', verticalalignment='bottom'
                 )
-        plt.axhline(y=75, color='r', linestyle='--')
+        plt.axhline(
+            y=WL_MATCH_THRESHOLD, color='r', linestyle='--',
+            label=f'scoring threshold ({WL_MATCH_THRESHOLD})'
+        )
         plt.title('Delay Condition: Ratio vs. Word')
         plt.xlabel('Word')
         plt.ylabel('Ratio')

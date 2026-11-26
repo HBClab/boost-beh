@@ -18,6 +18,12 @@ class ParsedIdentifiers:
     session: Optional[object]
 
 
+WL_SCORE_COLUMNS = [
+    "block_1", "block_2", "block_3", "block_4", "block_5",
+    "distraction", "immediate", "delay",
+]
+
+
 class META_RECREATE:
     """
     Rebuild domain-level meta aggregates by rescanning saved QC CSV exports.
@@ -435,14 +441,8 @@ class META_RECREATE:
                     "subject_id": identifiers.subject_id,
                     "session": identifiers.session,
                     "task": None,
-                    "block_1": 0,
-                    "block_2": 0,
-                    "block_3": 0,
-                    "block_4": 0,
-                    "block_5": 0,
-                    "distraction": 0,
-                    "immediate": 0,
-                    "delay": 0,
+                    # NA (not 0) when the WL or DWL source file is missing
+                    **{col: pd.NA for col in WL_SCORE_COLUMNS},
                 },
             )
 
@@ -465,6 +465,7 @@ class META_RECREATE:
         if rows:
             wide = pd.DataFrame(rows.values())
             wide = wide[ordered_columns]
+            wide[WL_SCORE_COLUMNS] = wide[WL_SCORE_COLUMNS].astype("Int64")
             wide = wide.sort_values(["subject_id", "session"]).reset_index(drop=True)
         else:
             wide = pd.DataFrame(columns=ordered_columns)

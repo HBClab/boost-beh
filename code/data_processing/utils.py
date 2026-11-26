@@ -480,6 +480,11 @@ import pandas as pd
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
+# Similarity (0-100) must exceed this for a typed entry to count as correct.
+WL_MATCH_THRESHOLD = 80
+# Mean phase similarity below this flags a WL/DWL session as category 2.
+WL_QC_MEAN_SIMILARITY_MIN = 30
+
 class WL_UTILS:
     """
     WL_UTILS: A utility class for data preprocessing, analysis, and fuzzy matching in response datasets.
@@ -648,8 +653,8 @@ class WL_UTILS:
                 if best_match:
                     matched_word, ratio = best_match
                     repeat_flag = '1' if matched_word in used else '0'
-                    correct_flag = '1' if ratio > 80 else '0'
-                    if ratio > 80:
+                    correct_flag = '1' if ratio > WL_MATCH_THRESHOLD else '0'
+                    if ratio > WL_MATCH_THRESHOLD:
                         used.append(matched_word)
                     # sub[5] is block_num from add_metadata
                     results.append([first_item, matched_word, ratio, sub[3], repeat_flag, correct_flag, sub[5]])
@@ -789,7 +794,7 @@ class DWL_UTILS:
             if best_match_data:
                 matched_word, ratio_score = best_match_data[0], best_match_data[1]
                 repeat_flag = '1' if matched_word in used else '0'
-                correct_flag = '1' if ratio_score > 80 else '0'
+                correct_flag = '1' if ratio_score > WL_MATCH_THRESHOLD else '0'
                 if correct_flag == '1':
                     used.append(matched_word)
                 fuzzy_results.append([word, matched_word, ratio_score, backspace_list[i], repeat_flag, correct_flag])

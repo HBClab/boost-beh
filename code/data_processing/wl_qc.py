@@ -1,5 +1,7 @@
 import pandas as pd
-from data_processing.utils import WL_UTILS, DWL_UTILS
+from data_processing.utils import (
+    WL_UTILS, DWL_UTILS, WL_QC_MEAN_SIMILARITY_MIN,
+)
 
 class WL_QC:
 
@@ -25,9 +27,8 @@ class WL_QC:
             return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 
-        if (df_all['block'] == 'immediate').any():
-            if df_all.loc[df_all['block'] == 'immediate', 'ratio'].iloc[0] < 0.3:
-                self.CATEGORY = 2
+        if self._low_phase_similarity(df_all, 'immediate'):
+            self.CATEGORY = 2
 
 
         return df_all, self.CATEGORY
@@ -49,11 +50,20 @@ class WL_QC:
             return df_all, self.CATEGORY
         # Assuming df_all is the DataFrame and self.CATEGORY exists in the class context
 
-        if (df_all['block'] == 'delay').any():
-            if df_all.loc[df_all['block'] == 'delay', 'ratio'].iloc[0] < 0.3:
-                self.CATEGORY = 2
+        if self._low_phase_similarity(df_all, 'delay'):
+            self.CATEGORY = 2
 
         return df_all, self.CATEGORY
+
+    @staticmethod
+    def _low_phase_similarity(df_all, block):
+        """True when mean similarity across all entries in ``block`` is below
+        WL_QC_MEAN_SIMILARITY_MIN (0-100 scale). Empty phases are not
+        flagged."""
+        phase = pd.to_numeric(
+            df_all.loc[df_all['block'] == block, 'ratio'], errors='coerce'
+        ).dropna()
+        return (not phase.empty) and phase.mean() < WL_QC_MEAN_SIMILARITY_MIN
 
     @staticmethod
     def wl_count_correct(df_all):
